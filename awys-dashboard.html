@@ -934,85 +934,93 @@
       </div>
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-label">Total Views</div>
-          <div class="stat-value" id="a-views">0</div>
-          <div class="stat-delta">↑ Getting started</div>
+          <div class="stat-label">YouTube Views</div>
+          <div class="stat-value" id="a-views">—</div>
+          <div class="stat-delta" id="a-views-delta">Syncing...</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Total Followers</div>
-          <div class="stat-value" id="a-followers">0</div>
-          <div class="stat-delta">↑ Getting started</div>
+          <div class="stat-label">Subscribers</div>
+          <div class="stat-value" id="a-followers">—</div>
+          <div class="stat-delta" id="a-subs-delta">Syncing...</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Posts Published</div>
-          <div class="stat-value" id="a-posts">0</div>
+          <div class="stat-label">Videos Published</div>
+          <div class="stat-value" id="a-posts">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Avg Engagement</div>
-          <div class="stat-value gold" id="a-engage">—</div>
+          <div class="stat-label">Last Synced</div>
+          <div class="stat-value gold" id="a-synced" style="font-size:14px">—</div>
         </div>
       </div>
       <div class="analytics-grid">
         <div class="analytics-card">
-          <div class="analytics-title">Views — Last 7 Days</div>
+          <div class="analytics-title" id="chart-title">Views — Last 7 Days</div>
           <div class="chart-bars" id="chart-views">
-            <div class="bar" style="height:10%"></div>
-            <div class="bar" style="height:10%"></div>
-            <div class="bar" style="height:10%"></div>
-            <div class="bar" style="height:10%"></div>
-            <div class="bar" style="height:10%"></div>
-            <div class="bar" style="height:10%"></div>
-            <div class="bar active" style="height:10%"></div>
+            <div class="bar" style="height:5%"></div>
+            <div class="bar" style="height:5%"></div>
+            <div class="bar" style="height:5%"></div>
+            <div class="bar" style="height:5%"></div>
+            <div class="bar" style="height:5%"></div>
+            <div class="bar" style="height:5%"></div>
+            <div class="bar active" style="height:5%"></div>
           </div>
-          <div class="chart-labels">
-            <div class="chart-label">M</div>
-            <div class="chart-label">T</div>
-            <div class="chart-label">W</div>
-            <div class="chart-label">T</div>
-            <div class="chart-label">F</div>
-            <div class="chart-label">S</div>
-            <div class="chart-label">S</div>
-          </div>
+          <div class="chart-labels" id="chart-labels"></div>
         </div>
         <div class="analytics-card">
           <div class="analytics-title">Platform Breakdown</div>
           <div class="analytics-row">
             <span class="analytics-label">YouTube</span>
-            <span class="analytics-val">0 views</span>
+            <span class="analytics-val" id="yt-views-label">—</span>
           </div>
           <div class="analytics-row">
             <span class="analytics-label">TikTok</span>
-            <span class="analytics-val">0 views</span>
+            <span class="analytics-val">Pending connection</span>
           </div>
           <div class="analytics-row">
             <span class="analytics-label">Instagram</span>
-            <span class="analytics-val">0 views</span>
+            <span class="analytics-val">Pending connection</span>
           </div>
           <div class="analytics-row">
             <span class="analytics-label">Facebook</span>
-            <span class="analytics-val">0 views</span>
+            <span class="analytics-val">Pending connection</span>
           </div>
         </div>
         <div class="analytics-card">
-          <div class="analytics-title">Top Performing Content</div>
+          <div class="analytics-title">YouTube Channel</div>
           <div class="analytics-row">
-            <span class="analytics-label">No content yet</span>
-            <span class="analytics-val">—</span>
+            <span class="analytics-label">Channel name</span>
+            <span class="analytics-val" id="yt-name">—</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Total views</span>
+            <span class="analytics-val" id="yt-total-views">—</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Subscribers</span>
+            <span class="analytics-val" id="yt-total-subs">—</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Videos</span>
+            <span class="analytics-val" id="yt-total-videos">—</span>
           </div>
         </div>
         <div class="analytics-card">
-          <div class="analytics-title">Growth Rate</div>
+          <div class="analytics-title">Milestones</div>
           <div class="analytics-row">
-            <span class="analytics-label">Followers gained today</span>
-            <span class="analytics-val">0</span>
+            <span class="analytics-label">500 subscribers</span>
+            <span class="analytics-val" id="ms-500">0 / 500</span>
           </div>
           <div class="analytics-row">
-            <span class="analytics-label">Views gained today</span>
-            <span class="analytics-val">0</span>
+            <span class="analytics-label">1,000 subscribers</span>
+            <span class="analytics-val" id="ms-1000">0 / 1,000</span>
           </div>
           <div class="analytics-row">
-            <span class="analytics-label">Best performing platform</span>
-            <span class="analytics-val">—</span>
+            <span class="analytics-label">4,000 watch hours</span>
+            <span class="analytics-val" id="ms-4000">0 / 4,000</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">YouTube monetization</span>
+            <span class="analytics-val down" id="ms-monetize">Not eligible</span>
           </div>
         </div>
       </div>
@@ -1095,13 +1103,131 @@
         <div class="changelog-item">
           <div class="changelog-version">v0.11</div>
           <div class="changelog-content">
-            <div class="changelog-date">April 4, 2026 at 11:28 AM MTC</div>
+            <div class="changelog-date">April 4, 2026 at 3:48 PM MTC</div>
             <ul class="changelog-changes">
-              <li>Calendar week now starts on Sunday, runs forward through Saturday</li>
-              <li>Calendar prompt fully rewritten to force real content for all 7 days</li>
-              <li>Calendar response length increased to 600 words</li>
-              <li>Changelog now tracks exact date and time per version</li>
-              <li>All versions v0.01 through v0.04 documented with full detail</li>
+              <li>Full rebrand — colors extracted from new robot logo</li>
+              <li>Background updated to deep navy/purple matching logo dark bg</li>
+              <li>Primary accent updated to warm amber #F0A020 matching coin</li>
+              <li>Danger color updated to coral red #F03C3C matching robot body</li>
+              <li>All cards updated with translucent purple tint</li>
+              <li>Robot logo embedded in header replacing text A</li>
+              <li>Robot logo embedded in splash screen replacing text A</li>
+              <li>PWA icons updated to new robot logo at 192px and 512px</li>
+              <li>Analytics panel rebuilt with live YouTube sync</li>
+              <li>Analytics day labels now use local device day correctly</li>
+              <li>YouTube channel stats pull directly from connected account</li>
+              <li>Milestone tracker added — 500, 1000 subs, 4000 watch hours</li>
+              <li>Changelog rebuilt to append versions not replace</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.11</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 1:30 PM MTC</div>
+            <ul class="changelog-changes">
+              <li>YouTube OAuth2 authentication flow built into VPS backend</li>
+              <li>YouTube video upload endpoint — /youtube/upload</li>
+              <li>YouTube channel stats endpoint — live subscriber and view count</li>
+              <li>Connect YouTube button added to Accounts panel</li>
+              <li>OAuth status check — dashboard detects YouTube connection</li>
+              <li>Credentials stored securely on VPS in pickle file</li>
+              <li>Token auto-refresh when credentials expire</li>
+              <li>OAUTHLIB_INSECURE_TRANSPORT fix for Cloudflare proxy</li>
+              <li>Custom OAuth flow bypassing PKCE requirement</li>
+              <li>First video uploaded to YouTube — qDdqgLl2k98</li>
+              <li>start.sh created for persistent server startup</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.09</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 1:15 PM MTC</div>
+            <ul class="changelog-changes">
+              <li>Balanced content framework — 4 types rotating weekly</li>
+              <li>Sunday: Trending AI News, Monday: Tool Review</li>
+              <li>Tuesday: Beginner Tutorial, Wednesday: Money and Productivity</li>
+              <li>Thursday: Tool Comparison, Friday: Trending AI News, Saturday: Tutorial</li>
+              <li>Evergreen topic pool per content type — never runs dry</li>
+              <li>Content type label shown on each calendar card in gold</li>
+              <li>Calendar prompt includes specific title examples to guide AI</li>
+              <li>AI trend filter pulls named tools only from live data</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.08</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 1:05 PM MTC</div>
+            <ul class="changelog-changes">
+              <li>Trend filter tightened to named AI tools only</li>
+              <li>Generic YouTube trends blocked from calendar</li>
+              <li>Strong evergreen AI fallback topics added</li>
+              <li>Calendar prompt rewritten with good title examples</li>
+              <li>Generic fallback title removed</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.07</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 12:55 PM MTC</div>
+            <ul class="changelog-changes">
+              <li>Target viewer defined — surface-level AI curious beginner</li>
+              <li>Script tone — knowledgeable friend at dinner, not tech lecture</li>
+              <li>Scripts connect AI tools to everyday life situations</li>
+              <li>Wow moment structure — every script builds to an AI surprise</li>
+              <li>Plain language enforced — explain any jargon immediately</li>
+              <li>Calendar titles simple and curiosity-driven for beginners</li>
+              <li>CTA updated to match brand voice</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.06</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 12:41 PM MTC</div>
+            <ul class="changelog-changes">
+              <li>Niche lock enforced — calendar filters out non-AI trending topics</li>
+              <li>AI keyword filter added — only AI-related trends feed into calendar</li>
+              <li>Server prompt upgraded with full channel identity</li>
+              <li>Scripts now always name the specific AI tool</li>
+              <li>Evergreen AI fallback topics added for off-topic trending data</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.05</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 12:22 PM MTC</div>
+            <ul class="changelog-changes">
+              <li>Calendar now pulls live trending topics from Trends tab</li>
+              <li>Trend Score added per day — % alignment with current trends</li>
+              <li>Trending angle added — why topic is relevant right now</li>
+              <li>Platform-specific hashtag pools — YouTube, TikTok, Instagram, Facebook</li>
+              <li>Server prompt updated with platform-specific trending hashtag sets</li>
+              <li>Scripts explicitly reference 2026</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.04</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 11:53 AM MTC</div>
+            <ul class="changelog-changes">
+              <li>Calendar week starts Sunday, runs forward through Saturday</li>
+              <li>Calendar rebuilt to make 7 individual API calls — one per day</li>
+              <li>Days populate live as each generates</li>
+              <li>Duplicate script block removed — was causing app crash</li>
+              <li>JS validated clean via Node.js</li>
             </ul>
           </div>
         </div>
@@ -1109,15 +1235,14 @@
         <div class="changelog-item">
           <div class="changelog-version">v0.03</div>
           <div class="changelog-content">
-            <div class="changelog-date">April 4, 2026 at 5:20 AM MTC</div>
+            <div class="changelog-date">April 4, 2026 at 11:20 AM MTC</div>
             <ul class="changelog-changes">
-              <li>Trends panel rewritten to search AI-niche content specifically</li>
-              <li>YouTube queries: AI tools 2026, AI tutorial, ChatGPT tips, AI productivity</li>
-              <li>Sample trend fallback updated with 12 AI-niche relevant titles</li>
+              <li>Trends panel searches AI-niche content specifically</li>
+              <li>YouTube queries: AI tools 2026, ChatGPT tips, AI productivity</li>
+              <li>Sample trends updated with 12 AI-niche titles</li>
               <li>Content Calendar panel added with Generate Week button</li>
-              <li>Niche strategy box in Calendar header showing brand DNA</li>
+              <li>Niche strategy box in Calendar header</li>
               <li>Fallback fills missing calendar days automatically</li>
-              <li>Calendar dates calculated from Monday of current week</li>
             </ul>
           </div>
         </div>
@@ -1125,18 +1250,15 @@
         <div class="changelog-item">
           <div class="changelog-version">v0.02</div>
           <div class="changelog-content">
-            <div class="changelog-date">April 4, 2026 at 4:45 AM MTC</div>
+            <div class="changelog-date">April 4, 2026 at 10:45 AM MTC</div>
             <ul class="changelog-changes">
               <li>Niche locked — AI tools for everyday people</li>
-              <li>Brand angle locked — "I tested this AI so you don't have to"</li>
-              <li>Hook style — practical value in every video</li>
-              <li>Monetization — YouTube Ads + AI affiliate links (20-40% recurring)</li>
-              <li>Script generator upgraded with niche DNA injected into every prompt</li>
-              <li>Affiliate tracker added to Revenue panel — Jasper, Writesonic, Pictory, Murf</li>
+              <li>Brand angle — I tested this AI so you dont have to</li>
+              <li>Script generator upgraded with niche DNA</li>
+              <li>Affiliate tracker added to Revenue panel</li>
               <li>generateScript fixed to route through VPS Flask backend</li>
-              <li>Direct Anthropic API call removed — was blocked by CORS policy</li>
-              <li>Duplicate closing brace syntax error fixed in generateScript</li>
-              <li>JS syntax validated clean via Node.js --check</li>
+              <li>CORS issue fixed — direct Anthropic call removed</li>
+              <li>Syntax error fixed in generateScript</li>
             </ul>
           </div>
         </div>
@@ -1144,31 +1266,26 @@
         <div class="changelog-item">
           <div class="changelog-version">v0.01</div>
           <div class="changelog-content">
-            <div class="changelog-date">April 4, 2026 at 1:30 AM MTC — Initial Release</div>
+            <div class="changelog-date">April 4, 2026 at 7:30 AM MTC — Initial Release</div>
             <ul class="changelog-changes">
               <li>Project started — AI While You Sleeping content automation platform</li>
-              <li>Single HTML PWA — no framework, no build tools, no dependencies</li>
-              <li>Splash screen with A lettermark and animated gold loading bar</li>
+              <li>Single HTML PWA — no framework, no build tools</li>
+              <li>Splash screen with A lettermark and gold loading bar</li>
               <li>8-tab navigation: Trends, Scripts, Accounts, Queue, Analytics, Revenue, Changelog, Settings</li>
-              <li>YouTube Data API v3 integrated — pulls live trending videos by region</li>
-              <li>Google Trends RSS fallback for additional topic data</li>
-              <li>Claude AI script generation — platform-targeted prompts per channel</li>
-              <li>Script modal with view, copy, and add-to-queue actions</li>
-              <li>Platform chips — YouTube, TikTok, Instagram, Facebook targeting</li>
-              <li>Accounts panel — all 4 platforms with follower and view stats</li>
-              <li>Queue panel — add scripts, schedule posts, remove items</li>
-              <li>Analytics panel — 7-day bar chart, platform breakdown, growth metrics</li>
-              <li>Revenue panel — AdSense tracker and YouTube Partner Program milestones</li>
-              <li>Settings panel — API keys stored securely in browser localStorage</li>
-              <li>Flask backend deployed on VPS 187.124.240.101 at port 5001</li>
-              <li>Cloudflare tunnel for HTTPS access via trycloudflare.com</li>
-              <li>PWA manifest.json and sw.js — installable on iOS and Android home screen</li>
-              <li>Robot logo (sleeping robot + coin) set as PWA icons at 192px and 512px</li>
-              <li>Raleway 200-weight typeface throughout — Battlefront-inspired minimal dark UI</li>
-              <li>Gold accent color #C9A020 — all active states, labels, borders</li>
-              <li>GitHub Pages deployment at qspencer-4.github.io/awys-dashboard</li>
-              <li>VPS: Python 3.12, Flask 3.1.3, flask-cors 6.0.2, requests 2.33.1</li>
-              <li>Accounts created: @aiwhileyousleeping on YouTube, TikTok, Instagram, Facebook</li>
+              <li>YouTube Data API v3 integrated — live trending videos</li>
+              <li>Claude AI script generation — platform-targeted prompts</li>
+              <li>Script modal with view, copy, and queue actions</li>
+              <li>Accounts panel — all 4 platforms</li>
+              <li>Queue panel — add scripts, schedule posts</li>
+              <li>Analytics panel — 7-day chart, platform breakdown</li>
+              <li>Revenue panel — AdSense tracker, YouTube Partner Program milestones</li>
+              <li>Settings panel — API keys in localStorage</li>
+              <li>Flask backend on VPS port 5001</li>
+              <li>Cloudflare tunnel for HTTPS</li>
+              <li>PWA manifest and service worker — installable on iOS and Android</li>
+              <li>Raleway 200 typeface — Battlefront dark UI</li>
+              <li>GitHub Pages — qspencer-4.github.io/awys-dashboard</li>
+              <li>Accounts created — @aiwhileyousleeping on all platforms</li>
             </ul>
           </div>
         </div>
@@ -1478,7 +1595,79 @@ function renderQueue() {
 function removeFromQueue(id) { state.queue = state.queue.filter(q => q.id !== id); renderQueue(); }
 
 // ── ANALYTICS ──
-function loadAnalytics() { showToast('Analytics will populate as accounts connect'); }
+async function loadAnalytics() {
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
+
+  // Build chart labels based on actual local device day
+  const today = new Date();
+  const dayLabels = ['S','M','T','W','T','F','S'];
+  const todayIdx = today.getDay(); // 0=Sun, 1=Mon... 6=Sat
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    labels.push(dayLabels[d.getDay()]);
+  }
+  const labelContainer = document.getElementById('chart-labels');
+  if (labelContainer) {
+    labelContainer.innerHTML = labels.map(l => '<div class="chart-label">' + l + '</div>').join('');
+  }
+
+  // Mark today's bar as active
+  const bars = document.querySelectorAll('#chart-views .bar');
+  bars.forEach((b, i) => {
+    b.classList.remove('active');
+    if (i === 6) b.classList.add('active');
+  });
+
+  // Update last synced time
+  const syncEl = document.getElementById('a-synced');
+  if (syncEl) syncEl.textContent = today.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+  // Fetch YouTube channel stats from VPS
+  try {
+    const res = await fetch(vpsUrl + '/youtube/channel');
+    const data = await res.json();
+
+    if (data.name) {
+      // Update all analytics fields
+      const subs = data.subscribers || 0;
+      const views = data.views || 0;
+      const videos = data.videos || 0;
+
+      document.getElementById('a-views').textContent = formatNum(views);
+      document.getElementById('a-followers').textContent = formatNum(subs);
+      document.getElementById('a-posts').textContent = videos;
+      document.getElementById('yt-views-label').textContent = formatNum(views) + ' views';
+      document.getElementById('yt-name').textContent = data.name;
+      document.getElementById('yt-total-views').textContent = formatNum(views);
+      document.getElementById('yt-total-subs').textContent = formatNum(subs);
+      document.getElementById('yt-total-videos').textContent = videos;
+
+      // Update milestones
+      document.getElementById('ms-500').textContent = subs + ' / 500';
+      document.getElementById('ms-1000').textContent = subs + ' / 1,000';
+      document.getElementById('ms-4000').textContent = '0 / 4,000';
+
+      const monetizeEl = document.getElementById('ms-monetize');
+      if (subs >= 1000) {
+        monetizeEl.textContent = 'Eligible';
+        monetizeEl.className = 'analytics-val up';
+      } else {
+        monetizeEl.textContent = 'Not eligible yet';
+        monetizeEl.className = 'analytics-val down';
+      }
+
+      document.getElementById('a-views-delta').textContent = views > 0 ? '↑ Growing' : '↑ Getting started';
+      document.getElementById('a-subs-delta').textContent = subs > 0 ? '↑ Growing' : '↑ Getting started';
+
+      showToast('Analytics synced from YouTube');
+    }
+  } catch(e) {
+    showToast('Could not sync — check VPS connection');
+  }
+}
 
 // ── TOAST ──
 function showToast(msg) {
