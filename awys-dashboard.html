@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.05</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.06</div>
   </header>
 
   <nav>
@@ -1089,7 +1089,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.05</div>
+          <div class="changelog-version">v0.06</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 11:28 AM MTC</div>
             <ul class="changelog-changes">
@@ -1526,15 +1526,20 @@ async function generateCalendar() {
     const selectedTags = [hashPool[i % hashPool.length], hashPool[(i+2) % hashPool.length], hashPool[(i+4) % hashPool.length]].join(' ');
 
     try {
-      const trendContext = hasTrends
-        ? 'Current trending topics to draw inspiration from: ' + trendingTopics + '.'
-        : 'Focus on evergreen AI tool topics for 2026.';
+      // Extract only AI-related trending topics — filter out non-AI content
+      const aiTrends = state.trends.filter(t =>
+        /\b(AI|artificial intelligence|ChatGPT|Claude|GPT|machine learning|automation|robot|Midjourney|Runway|Sora|Gemini|Copilot|LLM|neural|tech|tool|software|app|digital|productivity)\b/i.test(t.title)
+      ).slice(0, 5).map(t => t.title).join(', ');
+
+      const trendContext = aiTrends.length > 0
+        ? 'These AI topics are currently trending — use them for inspiration: ' + aiTrends + '.'
+        : 'Focus on these evergreen AI tool topics: ChatGPT productivity, AI writing tools, AI video generation, AI image creation, AI automation.';
 
       const res = await fetch(vpsUrl + '/generate-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: 'Generate one short-form video idea for an AI tools channel. Day: ' + dayName + '. Format: ' + format + '. ' + trendContext + ' Niche: AI tools for everyday people. Year: 2026. The idea should be timely, trend-aware, and practically valuable. Respond ONLY in this exact format: TITLE: [compelling title under 60 chars referencing current AI trends] HOOK: [punchy opening line under 15 words] AFFILIATE: [one specific AI tool name or None] TRENDING_ANGLE: [one sentence on why this topic is trending right now]',
+          topic: 'Generate one short-form video idea strictly about AI tools for everyday people. Day: ' + dayName + '. Format: ' + format + '. Year: 2026. ' + trendContext + ' STRICT RULES: The video MUST be about an actual AI tool, feature, or practical AI use case. Never use pets, celebrities, or non-AI viral trends as the subject. The AI tool or use case IS the story. Respond ONLY in this exact format with real content: TITLE: [compelling title about a specific AI tool or use case, under 60 chars] HOOK: [punchy opening line about AI, under 10 words, no placeholder text] AFFILIATE: [one specific real AI tool name like Jasper/Runway/Midjourney/Writesonic or None] TRENDING_ANGLE: [one sentence on why this AI topic is relevant in 2026]',
           platform: 'youtube', key: antKey, length: 80
         })
       });
