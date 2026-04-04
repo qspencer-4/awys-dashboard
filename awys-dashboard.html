@@ -1087,27 +1087,88 @@
         <span class="section-title">Changelog</span>
       </div>
       <div class="changelog-list">
+
         <div class="changelog-item">
           <div class="changelog-version">v0.04</div>
           <div class="changelog-content">
-            <div class="changelog-date">April 2026 — Initial Release</div>
+            <div class="changelog-date">April 4, 2026 at 5:28 PM</div>
             <ul class="changelog-changes">
-              <li>Initial dashboard build</li>
-              <li>YouTube Data API v3 integration for trending shorts</li>
-              <li>Google Trends integration for topic velocity</li>
-              <li>Claude AI script generation engine</li>
-              <li>Trends panel with live data refresh</li>
-              <li>Scripts panel with platform targeting</li>
-              <li>Accounts panel — YouTube, TikTok, Instagram, Facebook</li>
-              <li>Queue panel for post scheduling</li>
-              <li>Analytics panel with platform breakdown</li>
-              <li>Revenue panel with monetization milestones</li>
-              <li>Changelog panel</li>
-              <li>Settings panel with API key management</li>
-              <li>Battlefront-inspired dark UI with Raleway typeface</li>
+              <li>Calendar week now starts on Sunday, runs forward through Saturday</li>
+              <li>Calendar prompt fully rewritten to force real content for all 7 days</li>
+              <li>Calendar response length increased to 600 words</li>
+              <li>Changelog now tracks exact date and time per version</li>
+              <li>All versions v0.01 through v0.04 documented with full detail</li>
             </ul>
           </div>
         </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.03</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 11:20 AM</div>
+            <ul class="changelog-changes">
+              <li>Trends panel rewritten to search AI-niche content specifically</li>
+              <li>YouTube queries: AI tools 2026, AI tutorial, ChatGPT tips, AI productivity</li>
+              <li>Sample trend fallback updated with 12 AI-niche relevant titles</li>
+              <li>Content Calendar panel added with Generate Week button</li>
+              <li>Niche strategy box in Calendar header showing brand DNA</li>
+              <li>Fallback fills missing calendar days automatically</li>
+              <li>Calendar dates calculated from Monday of current week</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.02</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 10:45 AM</div>
+            <ul class="changelog-changes">
+              <li>Niche locked — AI tools for everyday people</li>
+              <li>Brand angle locked — "I tested this AI so you don't have to"</li>
+              <li>Hook style — practical value in every video</li>
+              <li>Monetization — YouTube Ads + AI affiliate links (20-40% recurring)</li>
+              <li>Script generator upgraded with niche DNA injected into every prompt</li>
+              <li>Affiliate tracker added to Revenue panel — Jasper, Writesonic, Pictory, Murf</li>
+              <li>generateScript fixed to route through VPS Flask backend</li>
+              <li>Direct Anthropic API call removed — was blocked by CORS policy</li>
+              <li>Duplicate closing brace syntax error fixed in generateScript</li>
+              <li>JS syntax validated clean via Node.js --check</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="changelog-item">
+          <div class="changelog-version">v0.01</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 4, 2026 at 7:30 AM — Initial Release</div>
+            <ul class="changelog-changes">
+              <li>Project started — AI While You Sleeping content automation platform</li>
+              <li>Single HTML PWA — no framework, no build tools, no dependencies</li>
+              <li>Splash screen with A lettermark and animated gold loading bar</li>
+              <li>8-tab navigation: Trends, Scripts, Accounts, Queue, Analytics, Revenue, Changelog, Settings</li>
+              <li>YouTube Data API v3 integrated — pulls live trending videos by region</li>
+              <li>Google Trends RSS fallback for additional topic data</li>
+              <li>Claude AI script generation — platform-targeted prompts per channel</li>
+              <li>Script modal with view, copy, and add-to-queue actions</li>
+              <li>Platform chips — YouTube, TikTok, Instagram, Facebook targeting</li>
+              <li>Accounts panel — all 4 platforms with follower and view stats</li>
+              <li>Queue panel — add scripts, schedule posts, remove items</li>
+              <li>Analytics panel — 7-day bar chart, platform breakdown, growth metrics</li>
+              <li>Revenue panel — AdSense tracker and YouTube Partner Program milestones</li>
+              <li>Settings panel — API keys stored securely in browser localStorage</li>
+              <li>Flask backend deployed on VPS 187.124.240.101 at port 5001</li>
+              <li>Cloudflare tunnel for HTTPS access via trycloudflare.com</li>
+              <li>PWA manifest.json and sw.js — installable on iOS and Android home screen</li>
+              <li>Robot logo (sleeping robot + coin) set as PWA icons at 192px and 512px</li>
+              <li>Raleway 200-weight typeface throughout — Battlefront-inspired minimal dark UI</li>
+              <li>Gold accent color #C9A020 — all active states, labels, borders</li>
+              <li>GitHub Pages deployment at qspencer-4.github.io/awys-dashboard</li>
+              <li>VPS: Python 3.12, Flask 3.1.3, flask-cors 6.0.2, requests 2.33.1</li>
+              <li>Accounts created: @aiwhileyousleeping on YouTube, TikTok, Instagram, Facebook</li>
+            </ul>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1672,50 +1733,49 @@ TAGS: #AIhacks #shorts #weekend
 }
 
 function parseAndRenderCalendar(text, startDate) {
-  const blocks = text.split('---').map(b => b.trim()).filter(Boolean);
-  const days = [];
-
   // Start from THIS Sunday (today if Sunday, else next Sunday)
   const sunday = new Date(startDate);
   const dow = sunday.getDay();
-  // If today is Sunday use today, otherwise go to next Sunday
   const daysUntilSunday = dow === 0 ? 0 : 7 - dow;
   sunday.setDate(sunday.getDate() + daysUntilSunday);
 
   const WEEK_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-  blocks.forEach((block, i) => {
-    if (i >= 7) return;
-    const get = (key) => {
-      const match = block.match(new RegExp(key + ':(.+)'));
-      return match ? match[1].trim() : '';
-    };
-    const date = new Date(sunday);
-    date.setDate(sunday.getDate() + i);
-    days.push({
-      day: WEEK_DAYS[i],
-      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      title: get('TITLE'),
-      hook: get('HOOK'),
-      format: get('FORMAT'),
-      affiliate: get('AFFILIATE'),
-      tags: get('TAGS')
-    });
-  });
+  // Robust parser — handles both --- separator and DAY: keyword approaches
+  const days = [];
 
-  // If we got fewer than 7 days, fill the rest
-  while (days.length < 7) {
-    const i = days.length;
+  // Try splitting by --- first
+  let blocks = text.split(/\n---\n|\n---$|^---\n/m).map(b => b.trim()).filter(b => b.length > 10);
+
+  // If that gives fewer than 4 blocks, try splitting by DAY: keyword
+  if (blocks.length < 4) {
+    blocks = text.split(/(?=DAY:\s)/i).map(b => b.trim()).filter(b => b.length > 10);
+  }
+
+  const get = (block, key) => {
+    const match = block.match(new RegExp(key + ':\s*(.+)', 'i'));
+    return match ? match[1].trim() : '';
+  };
+
+  for (let i = 0; i < 7; i++) {
+    const block = blocks[i] || '';
     const date = new Date(sunday);
     date.setDate(sunday.getDate() + i);
+
+    const title = get(block, 'TITLE');
+    const hook = get(block, 'HOOK');
+    const format = get(block, 'FORMAT') || 'Tutorial';
+    const affiliate = get(block, 'AFFILIATE') || 'None';
+    const tags = get(block, 'TAGS') || '#AItools #shorts';
+
     days.push({
       day: WEEK_DAYS[i],
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      title: 'Content idea coming soon',
-      hook: 'Stay tuned',
-      format: 'Tutorial',
-      affiliate: 'None',
-      tags: '#AItools #contentcreator #shorts'
+      title: title || 'Generate Week for fresh ideas',
+      hook: hook || '',
+      format,
+      affiliate,
+      tags
     });
   }
 
