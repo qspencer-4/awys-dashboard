@@ -1246,46 +1246,28 @@ async function generateScript() {
   btn.disabled = true;
   btn.textContent = 'Generating...';
 
-  const key = state.settings.antKey;
+  const antKey = state.settings.antKey;
+  const vpsUrl = state.settings.vpsUrl;
   const len = state.settings.scriptLen || 150;
 
-  const platformGuide = {
-    youtube: 'YouTube Shorts (60 seconds, hook in first 3 seconds, strong CTA)',
-    tiktok: 'TikTok (15-60 seconds, fast-paced, trending audio suggestion)',
-    instagram: 'Instagram Reels (30-60 seconds, visually descriptive)',
-    facebook: 'Facebook Reels (60 seconds, broader audience appeal)'
-  };
+  if (!antKey) { showToast('Add Anthropic API key in Settings'); btn.disabled = false; btn.textContent = 'Generate'; return; }
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); btn.disabled = false; btn.textContent = 'Generate'; return; }
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(vpsUrl + '/generate-script', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{
-          role: 'user',
-          content: `Write a ${platformGuide[platform]} script about: "${topic}".
-
-Format:
-HOOK: (first line — must grab attention instantly)
-SCRIPT: (the main content, ~${len} words, conversational and engaging)
-CTA: (call to action — subscribe/follow/like)
-TAGS: (5 relevant hashtags)
-
-Keep it punchy, modern, and optimized for virality. Write as if a confident creator is speaking directly to camera.`
-        }]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic, platform, key: antKey, length: len })
     });
 
     const data = await res.json();
-    const text = data.content?.[0]?.text || 'Error generating script. Check your API key in Settings.';
+    if (data.error) { showToast('Error: ' + data.error); btn.disabled = false; btn.textContent = 'Generate'; return; }
 
     const script = {
       id: Date.now(),
       topic,
       platform,
-      body: text,
+      body: data.script,
       status: 'ready',
       created: new Date().toLocaleDateString()
     };
@@ -1294,12 +1276,11 @@ Keep it punchy, modern, and optimized for virality. Write as if a confident crea
     state.scriptCount++;
     document.getElementById('stat-scripts').textContent = state.scriptCount;
     renderScripts();
-
     state.currentScript = script;
     openModal(script);
 
   } catch(e) {
-    showToast('Error — check API key in Settings');
+    showToast('Cannot reach VPS — check Backend URL in Settings');
   }
 
   btn.disabled = false;
