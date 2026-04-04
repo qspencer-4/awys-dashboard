@@ -1446,18 +1446,43 @@ async function loadTrends() {
     '<div class="empty"><div class="empty-text">Loading trends<span class="loading-dots"></span></div></div>';
   const key = state.settings.ytKey;
   if (!key) { showSampleTrends(); return; }
+
+  // Cache trends for 30 minutes to preserve YouTube quota
+  const cacheKey = 'awys-trends-cache';
+  const cacheTime = 'awys-trends-time';
+  const cached = localStorage.getItem(cacheKey);
+  const cachedAt = parseInt(localStorage.getItem(cacheTime) || '0');
+  const thirtyMin = 30 * 60 * 1000;
+  if (cached && Date.now() - cachedAt < thirtyMin) {
+    state.trends = JSON.parse(cached);
+    document.getElementById('stat-topics').textContent = state.trends.length;
+    document.getElementById('stat-yt').textContent = state.trends.length;
+    document.getElementById('stat-gt').textContent = '10';
+    renderTrends();
+    showToast('Trends loaded from cache — refreshes every 30 min');
+    return;
+  }
   try {
-    const queries = ['AI tools 2026','artificial intelligence tutorial','ChatGPT tips','AI productivity'];
+    const queries = ['AI tools 2026','ChatGPT tips','AI productivity'];
     const allItems = [];
     for (const q of queries) {
-      const r = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&q=' + encodeURIComponent(q) + '&type=video&order=viewCount&maxResults=3&regionCode=US&key=' + key);
+      const r = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&q=' + encodeURIComponent(q) + '&type=video&order=viewCount&maxResults=4&regionCode=US&key=' + key);
       const d = await r.json();
+      if (d.error && d.error.code === 403) {
+        // Quota exceeded — use sample trends
+        showSampleTrends();
+        showToast('YouTube quota reset at midnight — showing curated trends');
+        return;
+      }
       if (d.items) d.items.forEach(item => allItems.push({
         id: item.id.videoId, title: item.snippet.title, channel: item.snippet.channelTitle,
         views: Math.floor(Math.random() * 2000000) + 100000, platform: 'YouTube', hot: true
       }));
     }
+    if (allItems.length === 0) { showSampleTrends(); return; }
     state.trends = allItems.slice(0, 12);
+    localStorage.setItem('awys-trends-cache', JSON.stringify(state.trends));
+    localStorage.setItem('awys-trends-time', Date.now().toString());
     document.getElementById('stat-topics').textContent = state.trends.length;
     document.getElementById('stat-yt').textContent = state.trends.length;
     document.getElementById('stat-gt').textContent = '10';
@@ -1665,7 +1690,11 @@ async function loadAnalytics() {
       showToast('Analytics synced from YouTube');
     }
   } catch(e) {
-    showToast('Could not sync — check VPS connection');
+    if (e.message && e.message.includes('quota')) {
+      showToast('YouTube quota exceeded — resets at midnight Pacific');
+    } else {
+      showToast('Could not sync — check VPS connection');
+    }
   }
 }
 
