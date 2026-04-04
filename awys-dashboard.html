@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.03</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.04</div>
   </header>
 
   <nav>
@@ -1088,7 +1088,7 @@
       </div>
       <div class="changelog-list">
         <div class="changelog-item">
-          <div class="changelog-version">v0.03</div>
+          <div class="changelog-version">v0.04</div>
           <div class="changelog-content">
             <div class="changelog-date">April 2026 — Initial Release</div>
             <ul class="changelog-changes">
@@ -1576,81 +1576,86 @@ async function generateCalendar() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        topic: `You are a content strategist. Generate exactly 7 video ideas for a short-form video channel.
+        max_tokens: 2000,
+        topic: `You are a content strategist for an AI tools channel. Generate 7 short-form video ideas, one per day Sunday through Saturday.
 
 NICHE: ${NICHE.topic}
 ANGLE: "${NICHE.angle}"
 MONETIZATION: ${NICHE.monetize}
 
-IMPORTANT: You MUST output exactly 7 entries separated by ---, one for each day Monday through Sunday.
+CRITICAL RULES:
+- Output EXACTLY 7 entries, no more, no less
+- Every entry MUST have all 6 fields filled with real content
+- Separate each entry with --- on its own line
+- No intro text, no outro text, just the 7 entries
 
-Use this EXACT format for all 7 entries with no deviation:
+FILL IN ALL FIELDS WITH REAL IDEAS. Do not leave any field as a placeholder.
+
+DAY: Sunday
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
+FORMAT: Tutorial
+AFFILIATE: [name one real AI tool like Jasper, Writesonic, Pictory, or None]
+TAGS: #AItools #shorts #tutorial
+
+---
 
 DAY: Monday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
-FORMAT: Tutorial
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
+FORMAT: Review
+AFFILIATE: [name one real AI tool or None]
+TAGS: #AIreview #shorts #contentcreator
 
 ---
 
 DAY: Tuesday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
-FORMAT: Review
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
+FORMAT: Comparison
+AFFILIATE: [name one real AI tool or None]
+TAGS: #AIcomparison #shorts #tech
 
 ---
 
 DAY: Wednesday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
-FORMAT: Comparison
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
+FORMAT: List
+AFFILIATE: [name one real AI tool or None]
+TAGS: #AIlist #shorts #productivity
 
 ---
 
 DAY: Thursday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
-FORMAT: List
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
+FORMAT: Story
+AFFILIATE: [name one real AI tool or None]
+TAGS: #AIstory #shorts #tech
 
 ---
 
 DAY: Friday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
-FORMAT: Story
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
+FORMAT: News
+AFFILIATE: [name one real AI tool or None]
+TAGS: #AInews #shorts #trending
 
 ---
 
 DAY: Saturday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
-FORMAT: News
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
-
----
-
-DAY: Sunday
-TITLE: (video title under 60 chars)
-HOOK: (opening spoken line under 15 words)
+TITLE: [write a real clickable video title under 60 chars about AI tools]
+HOOK: [write a real opening line under 15 words]
 FORMAT: Tutorial
-AFFILIATE: (one AI tool name or None)
-TAGS: #tag1 #tag2 #tag3
+AFFILIATE: [name one real AI tool or None]
+TAGS: #AIhacks #shorts #weekend
 
 ---`,
         platform: 'youtube',
         key: antKey,
-        length: 400
+        length: 600
       })
     });
 
@@ -1670,11 +1675,14 @@ function parseAndRenderCalendar(text, startDate) {
   const blocks = text.split('---').map(b => b.trim()).filter(Boolean);
   const days = [];
 
-  // Get Monday of the current week
-  const monday = new Date(startDate);
-  const dayOfWeek = monday.getDay();
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  monday.setDate(monday.getDate() + diff);
+  // Start from THIS Sunday (today if Sunday, else next Sunday)
+  const sunday = new Date(startDate);
+  const dow = sunday.getDay();
+  // If today is Sunday use today, otherwise go to next Sunday
+  const daysUntilSunday = dow === 0 ? 0 : 7 - dow;
+  sunday.setDate(sunday.getDate() + daysUntilSunday);
+
+  const WEEK_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
   blocks.forEach((block, i) => {
     if (i >= 7) return;
@@ -1682,10 +1690,10 @@ function parseAndRenderCalendar(text, startDate) {
       const match = block.match(new RegExp(key + ':(.+)'));
       return match ? match[1].trim() : '';
     };
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + i);
+    const date = new Date(sunday);
+    date.setDate(sunday.getDate() + i);
     days.push({
-      day: DAYS[i],
+      day: WEEK_DAYS[i],
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       title: get('TITLE'),
       hook: get('HOOK'),
@@ -1698,10 +1706,10 @@ function parseAndRenderCalendar(text, startDate) {
   // If we got fewer than 7 days, fill the rest
   while (days.length < 7) {
     const i = days.length;
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + i);
+    const date = new Date(sunday);
+    date.setDate(sunday.getDate() + i);
     days.push({
-      day: DAYS[i],
+      day: WEEK_DAYS[i],
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       title: 'Content idea coming soon',
       hook: 'Stay tuned',
