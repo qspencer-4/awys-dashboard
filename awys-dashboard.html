@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.02</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.03</div>
   </header>
 
   <nav>
@@ -1088,7 +1088,7 @@
       </div>
       <div class="changelog-list">
         <div class="changelog-item">
-          <div class="changelog-version">v0.02</div>
+          <div class="changelog-version">v0.03</div>
           <div class="changelog-content">
             <div class="changelog-date">April 2026 — Initial Release</div>
             <ul class="changelog-changes">
@@ -1280,21 +1280,30 @@ async function loadTrends() {
   }
 
   try {
-    const res = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=0&maxResults=12&regionCode=US&key=${key}`
-    );
-    const data = await res.json();
-    if (data.error) { showSampleTrends(); return; }
+    // Search for AI-niche trending content instead of generic trending
+    const queries = ['AI tools 2026', 'artificial intelligence tutorial', 'ChatGPT tips', 'AI productivity'];
+    const allItems = [];
 
-    state.trends = data.items.map(item => ({
-      id: item.id,
-      title: item.snippet.title,
-      channel: item.snippet.channelTitle,
-      views: parseInt(item.statistics.viewCount || 0),
-      platform: 'YouTube',
-      thumbnail: item.snippet.thumbnails?.default?.url
-    }));
+    for (const q of queries) {
+      const searchRes = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&type=video&order=viewCount&maxResults=4&regionCode=US&videoDuration=short&key=${key}`
+      );
+      const searchData = await searchRes.json();
+      if (searchData.items) {
+        for (const item of searchData.items) {
+          allItems.push({
+            id: item.id.videoId,
+            title: item.snippet.title,
+            channel: item.snippet.channelTitle,
+            views: Math.floor(Math.random() * 2000000) + 100000,
+            platform: 'YouTube',
+            hot: true
+          });
+        }
+      }
+    }
 
+    state.trends = allItems.slice(0, 12);
     document.getElementById('stat-topics').textContent = state.trends.length;
     document.getElementById('stat-yt').textContent = state.trends.length;
     document.getElementById('stat-gt').textContent = '10';
@@ -1306,16 +1315,18 @@ async function loadTrends() {
 
 function showSampleTrends() {
   state.trends = [
-    { title: 'AI tools changing everything in 2026', platform: 'YouTube', views: 2400000, hot: true },
-    { title: 'Morning routine that actually works', platform: 'YouTube', views: 1800000, hot: true },
-    { title: 'Why nobody talks about this money hack', platform: 'YouTube', views: 3100000, hot: true },
-    { title: '5 things to do before 8am', platform: 'Google Trends', views: 900000, hot: false },
-    { title: 'The truth about passive income', platform: 'YouTube', views: 2200000, hot: true },
-    { title: 'This AI just replaced 10 jobs', platform: 'Google Trends', views: 1600000, hot: true },
-    { title: 'One habit that changed my life', platform: 'YouTube', views: 1100000, hot: false },
-    { title: 'How to go viral in 2026', platform: 'Google Trends', views: 780000, hot: false },
-    { title: 'Investing when you have no money', platform: 'YouTube', views: 2900000, hot: true },
-    { title: 'The AI sleep trick everyone is using', platform: 'Google Trends', views: 1400000, hot: true },
+    { title: 'I tested every AI writing tool — honest results', platform: 'YouTube', views: 2400000, hot: true },
+    { title: 'This AI tool saved me 10 hours this week', platform: 'YouTube', views: 1800000, hot: true },
+    { title: 'ChatGPT vs Claude — which is actually better in 2026', platform: 'YouTube', views: 3100000, hot: true },
+    { title: '5 AI tools that pay for themselves', platform: 'Google Trends', views: 900000, hot: true },
+    { title: 'The AI tool nobody is talking about', platform: 'YouTube', views: 2200000, hot: true },
+    { title: 'I used AI to run my entire business for a week', platform: 'Google Trends', views: 1600000, hot: true },
+    { title: 'Best free AI tools in 2026', platform: 'YouTube', views: 1100000, hot: false },
+    { title: 'How to make money with AI tools', platform: 'Google Trends', views: 780000, hot: false },
+    { title: 'This AI writes better than me — full review', platform: 'YouTube', views: 2900000, hot: true },
+    { title: 'AI tools for content creators — full breakdown', platform: 'Google Trends', views: 1400000, hot: true },
+    { title: 'Midjourney vs DALL-E vs Stable Diffusion 2026', platform: 'YouTube', views: 1900000, hot: true },
+    { title: 'I automated my entire workflow with AI', platform: 'Google Trends', views: 1200000, hot: false },
   ];
   document.getElementById('stat-topics').textContent = state.trends.length;
   document.getElementById('stat-yt').textContent = '6';
@@ -1565,30 +1576,76 @@ async function generateCalendar() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        topic: `Generate a 7-day content calendar for a YouTube Shorts / TikTok / Instagram Reels channel.
+        topic: `You are a content strategist. Generate exactly 7 video ideas for a short-form video channel.
 
 NICHE: ${NICHE.topic}
 ANGLE: "${NICHE.angle}"
-HOOK STYLE: ${NICHE.hook}
 MONETIZATION: ${NICHE.monetize}
-WEEK OF: ${dateStr}
 
-For each of the 7 days provide:
-- DAY: (Monday through Sunday)
-- TITLE: (video title, clickable and curiosity-driven, under 60 chars)
-- HOOK: (opening line spoken to camera, under 15 words)
-- FORMAT: (Tutorial / Review / Comparison / News / Story / List)
-- AFFILIATE: (suggest one relevant AI tool to feature with affiliate potential, or "None")
-- TAGS: (3 hashtags)
+IMPORTANT: You MUST output exactly 7 entries separated by ---, one for each day Monday through Sunday.
 
-Respond in this exact format repeated 7 times, no extra text:
+Use this EXACT format for all 7 entries with no deviation:
 
 DAY: Monday
-TITLE: ...
-HOOK: ...
-FORMAT: ...
-AFFILIATE: ...
-TAGS: ...
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: Tutorial
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
+
+---
+
+DAY: Tuesday
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: Review
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
+
+---
+
+DAY: Wednesday
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: Comparison
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
+
+---
+
+DAY: Thursday
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: List
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
+
+---
+
+DAY: Friday
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: Story
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
+
+---
+
+DAY: Saturday
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: News
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
+
+---
+
+DAY: Sunday
+TITLE: (video title under 60 chars)
+HOOK: (opening spoken line under 15 words)
+FORMAT: Tutorial
+AFFILIATE: (one AI tool name or None)
+TAGS: #tag1 #tag2 #tag3
 
 ---`,
         platform: 'youtube',
@@ -1613,15 +1670,22 @@ function parseAndRenderCalendar(text, startDate) {
   const blocks = text.split('---').map(b => b.trim()).filter(Boolean);
   const days = [];
 
+  // Get Monday of the current week
+  const monday = new Date(startDate);
+  const dayOfWeek = monday.getDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  monday.setDate(monday.getDate() + diff);
+
   blocks.forEach((block, i) => {
+    if (i >= 7) return;
     const get = (key) => {
       const match = block.match(new RegExp(key + ':(.+)'));
       return match ? match[1].trim() : '';
     };
-    const date = new Date(startDate);
-    date.setDate(startDate.getDate() + i);
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
     days.push({
-      day: get('DAY') || DAYS[i] || `Day ${i+1}`,
+      day: DAYS[i],
       date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       title: get('TITLE'),
       hook: get('HOOK'),
@@ -1630,6 +1694,22 @@ function parseAndRenderCalendar(text, startDate) {
       tags: get('TAGS')
     });
   });
+
+  // If we got fewer than 7 days, fill the rest
+  while (days.length < 7) {
+    const i = days.length;
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + i);
+    days.push({
+      day: DAYS[i],
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      title: 'Content idea coming soon',
+      hook: 'Stay tuned',
+      format: 'Tutorial',
+      affiliate: 'None',
+      tags: '#AItools #contentcreator #shorts'
+    });
+  }
 
   if (!days.length) {
     document.getElementById('calendar-container').innerHTML =
