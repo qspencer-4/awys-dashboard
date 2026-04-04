@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.07</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.09</div>
   </header>
 
   <nav>
@@ -1089,7 +1089,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.07</div>
+          <div class="changelog-version">v0.09</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 11:28 AM MTC</div>
             <ul class="changelog-changes">
@@ -1526,20 +1526,42 @@ async function generateCalendar() {
     const selectedTags = [hashPool[i % hashPool.length], hashPool[(i+2) % hashPool.length], hashPool[(i+4) % hashPool.length]].join(' ');
 
     try {
-      // Extract only AI-related trending topics — filter out non-AI content
-      const aiTrends = state.trends.filter(t =>
-        /\b(AI|artificial intelligence|ChatGPT|Claude|GPT|machine learning|automation|robot|Midjourney|Runway|Sora|Gemini|Copilot|LLM|neural|tech|tool|software|app|digital|productivity)\b/i.test(t.title)
-      ).slice(0, 5).map(t => t.title).join(', ');
+      // Balanced content framework — 4 types rotating through the week
+      const contentTypes = [
+        { type: 'Trending AI News',    angle: 'Cover a recent AI tool launch or update that everyday people should know about. Make it feel like breaking news they cant afford to miss.' },
+        { type: 'Tool Review',         angle: 'Review a specific AI tool you tested personally. Give an honest verdict. Beginners want to know: is it actually worth it?' },
+        { type: 'Beginner Tutorial',   angle: 'Teach one specific thing ChatGPT or another popular AI tool can do that most people dont know. The wow moment is everything.' },
+        { type: 'Money & Productivity',angle: 'Show how a specific AI tool saves time or makes money for regular people. Concrete numbers and real use cases only.' },
+        { type: 'Tool Comparison',     angle: 'Compare two popular AI tools head to head. Help beginners decide which one is actually worth their time.' },
+        { type: 'Trending AI News',    angle: 'What is the most talked about AI development this week? Break it down simply so anyone can understand why it matters.' },
+        { type: 'Beginner Tutorial',   angle: 'One simple AI trick or feature that changes how someone does something they do every day — writing, planning, creating, communicating.' }
+      ];
 
-      const trendContext = aiTrends.length > 0
-        ? 'These AI topics are currently trending — use them for inspiration: ' + aiTrends + '.'
-        : 'Focus on these evergreen AI tool topics: ChatGPT productivity, AI writing tools, AI video generation, AI image creation, AI automation.';
+      const ct = contentTypes[i];
+
+      // Pull AI-specific trends — named tools only
+      const aiTrends = state.trends.filter(t =>
+        /\b(ChatGPT|Claude|Gemini|Copilot|Midjourney|Runway|Sora|Pika|ElevenLabs|Jasper|Writesonic|GPT|Perplexity|Grok|Llama|AI tool|AI video|AI image|AI writing|AI voice|AI music|AI coding|AI automation|AI agent)\b/i.test(t.title)
+      ).slice(0, 3).map(t => t.title).join(', ');
+
+      // Curated evergreen AI topics by content type
+      const evergreenByType = {
+        'Trending AI News':     'GPT-5 release features, Google Gemini Ultra updates, OpenAI new products 2026',
+        'Tool Review':          'Runway Gen-3 video generation, ElevenLabs voice cloning, Midjourney v7, Perplexity AI search',
+        'Beginner Tutorial':    'ChatGPT prompt tricks, Claude document analysis, AI email writing, AI meeting summaries',
+        'Money & Productivity': 'AI freelancing tools, automating social media with AI, AI for small business owners',
+        'Tool Comparison':      'ChatGPT vs Claude vs Gemini, Midjourney vs DALL-E, Jasper vs Writesonic'
+      };
+
+      const topicPool = aiTrends.length > 0 ? aiTrends : evergreenByType[ct.type] || evergreenByType['Beginner Tutorial'];
+
+      const trendContext = 'Content type for today: ' + ct.type + '. Angle: ' + ct.angle + ' Topic pool to draw from: ' + topicPool + '.';
 
       const res = await fetch(vpsUrl + '/generate-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: 'Generate one short-form video idea for an AI tools channel targeting everyday beginners. Day: ' + dayName + '. Format: ' + format + '. Year: 2026. ' + trendContext + ' TARGET VIEWER: Someone who has heard of ChatGPT but not explored AI much. They want simple, surprising, practical content that sparks curiosity. RULES: Topic must be a trending or popular AI tool or use case. Connect it to everyday life. Create a wow moment. Use simple language in the title. Respond ONLY in this exact format: TITLE: [simple relatable title that sparks curiosity, under 60 chars, no jargon] HOOK: [relatable opening line a beginner would connect with, under 10 words] AFFILIATE: [one specific real AI tool name or None] TRENDING_ANGLE: [one sentence why this AI topic matters to everyday people right now]',
+          topic: 'You are creating a weekly content calendar for AI While You Sleeping — an AI channel for curious everyday beginners in 2026. Generate ONE video idea. ' + trendContext + ' TARGET VIEWER: Curious everyday person who uses ChatGPT occasionally but wants to know more. They respond to content that feels relevant, surprising, and immediately useful. TITLE RULES: Be specific to a real AI tool. Create genuine curiosity. Sound like something a real person would say. No jargon. No generic phrases like "AI tools tip" or "AI hacks". Good examples: "This AI wrote my entire business plan in 4 minutes", "ChatGPT just got a feature that changes everything", "I replaced my graphic designer with this free AI tool". Respond ONLY in this exact format with real filled-in content: TITLE: [specific title] HOOK: [opening line under 10 words] AFFILIATE: [real AI tool name or None] TRENDING_ANGLE: [one sentence why this matters to regular people today]',
           platform: 'youtube', key: antKey, length: 80
         })
       });
@@ -1554,7 +1576,7 @@ async function generateCalendar() {
       days.push({
         day: dayName,
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        title: get('TITLE') || 'AI tools tip for ' + dayName,
+        title: get('TITLE') || '',
         hook: get('HOOK') || '',
         format: format,
         affiliate: affiliate,
@@ -1594,7 +1616,7 @@ function renderCalendarDays(days, sunday) {
         (d.hook ? '<div class="cal-hook">"' + d.hook + '"</div>' : '') +
         (d.trendAngle ? '<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-bottom:10px;line-height:1.5">' + d.trendAngle + '</div>' : '') +
         '<div class="cal-meta">' +
-          (d.format ? '<span class="cal-tag">' + d.format + '</span>' : '') +
+          (d.contentType ? '<span class="cal-tag" style="border-color:rgba(201,160,32,0.5);color:var(--gold)">' + d.contentType + '</span>' : '') +
           (d.affiliate && d.affiliate.toLowerCase() !== 'none' ? '<span class="cal-tag affiliate">' + d.affiliate + '</span>' : '') +
         '</div>' +
         '<div style="font-size:11px;color:var(--white-dim);margin-bottom:14px">' + d.tags + '</div>' +
