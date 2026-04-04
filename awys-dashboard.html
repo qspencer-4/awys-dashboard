@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.09</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.10</div>
   </header>
 
   <nav>
@@ -836,23 +836,24 @@
         <button class="section-action" onclick="showToast('Connect flow coming in v0.02')">Add Account</button>
       </div>
       <div class="accounts-grid">
-        <div class="account-card">
+        <div class="account-card" id="yt-card">
           <div class="account-platform">YouTube</div>
           <div class="account-handle">@aiwhileyousleeping</div>
           <div class="account-stats">
             <div>
-              <div class="account-stat-val">0</div>
+              <div class="account-stat-val" id="yt-subs">0</div>
               <div class="account-stat-lbl">Subscribers</div>
             </div>
             <div>
-              <div class="account-stat-val">0</div>
+              <div class="account-stat-val" id="yt-videos">0</div>
               <div class="account-stat-lbl">Videos</div>
             </div>
           </div>
-          <div class="account-status">
+          <div class="account-status" id="yt-status">
             <div class="status-dot pending"></div>
-            Pending Setup
+            Not Connected
           </div>
+          <button class="section-action" style="margin-top:16px;font-size:10px" onclick="connectYouTube()">Connect YouTube →</button>
         </div>
         <div class="account-card">
           <div class="account-platform">TikTok</div>
@@ -1089,7 +1090,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.09</div>
+          <div class="changelog-version">v0.10</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 11:28 AM MTC</div>
             <ul class="changelog-changes">
@@ -1629,6 +1630,44 @@ function scriptFromCalendar(title) {
   showTab('scripts');
   document.getElementById('script-topic').value = title;
   showToast('Topic loaded — hit Generate');
+}
+
+// ── YOUTUBE CONNECTION ──
+async function connectYouTube() {
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
+  showToast('Opening YouTube authorization...');
+  window.open(vpsUrl + '/oauth/youtube', '_blank', 'width=600,height=700');
+  setTimeout(() => checkYouTubeStatus(), 10000);
+}
+
+async function checkYouTubeStatus() {
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) return;
+  try {
+    const res = await fetch(vpsUrl + '/oauth/status');
+    const data = await res.json();
+    const statusEl = document.getElementById('yt-status');
+    if (data.youtube_connected) {
+      if (statusEl) statusEl.innerHTML = '<div class="status-dot"></div> Connected';
+      showToast('YouTube connected successfully');
+      loadYouTubeStats();
+    }
+  } catch(e) {}
+}
+
+async function loadYouTubeStats() {
+  const vpsUrl = state.settings.vpsUrl;
+  const ytKey = state.settings.ytKey;
+  if (!vpsUrl || !ytKey) return;
+  try {
+    const res = await fetch(vpsUrl + '/youtube/channel?key=' + ytKey);
+    const data = await res.json();
+    if (data.subscribers !== undefined) {
+      document.getElementById('yt-subs').textContent = formatNum(data.subscribers);
+      document.getElementById('yt-videos').textContent = formatNum(data.videos);
+    }
+  } catch(e) {}
 }
 
 // ── MODAL CLOSE ON OVERLAY ──
