@@ -743,6 +743,84 @@
     from { opacity: 0.3; } to { opacity: 0.7; }
   }
 
+
+  /* ── VIDEO TAB ── */
+  .video-pipeline {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px; margin-bottom: 40px;
+  }
+  .pipeline-step {
+    background: rgba(30,15,50,0.35);
+    border: 1px solid rgba(240,160,32,0.12);
+    padding: 28px;
+    position: relative;
+  }
+  .pipeline-step.active { border-color: var(--gold); }
+  .pipeline-step.done { border-color: rgba(107,175,138,0.4); }
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 9px; color: var(--gold);
+    letter-spacing: 4px; margin-bottom: 10px;
+  }
+  .step-title {
+    font-size: 14px; font-weight: 300;
+    color: var(--white); margin-bottom: 8px;
+  }
+  .step-desc {
+    font-size: 11px; color: var(--white-dim);
+    line-height: 1.6; margin-bottom: 16px;
+  }
+  .step-status {
+    font-size: 10px; letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--white-dim);
+  }
+  .step-status.running { color: var(--gold); }
+  .step-status.done { color: var(--success); }
+  .step-status.error { color: var(--danger); }
+  .video-form-row {
+    display: flex; gap: 12px;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .video-input {
+    flex: 1; min-width: 200px;
+    background: rgba(30,15,50,0.5);
+    border: 1px solid rgba(240,160,32,0.2);
+    color: var(--white); font-family: var(--font-main);
+    font-size: 13px; padding: 12px 16px;
+    outline: none; font-weight: 300;
+  }
+  .video-input:focus { border-color: var(--gold); }
+  .video-select {
+    background: rgba(30,15,50,0.5);
+    border: 1px solid rgba(240,160,32,0.2);
+    color: var(--white); font-family: var(--font-main);
+    font-size: 12px; padding: 12px 16px;
+    outline: none; cursor: pointer;
+  }
+  .progress-bar-wrap {
+    width: 100%; height: 3px;
+    background: var(--white-faint);
+    margin: 16px 0;
+  }
+  .progress-bar-fill {
+    height: 100%; background: var(--gold);
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+  .video-preview {
+    border: 1px solid rgba(240,160,32,0.2);
+    padding: 20px; margin-top: 24px;
+    background: rgba(30,15,50,0.35);
+  }
+  .video-preview video {
+    width: 100%; max-height: 400px;
+    display: block;
+  }
+
 </style>
 </head>
 <body>
@@ -772,6 +850,7 @@
     <button class="nav-tab" onclick="showTab('scripts')">Scripts</button>
     <button class="nav-tab" onclick="showTab('accounts')">Accounts</button>
     <button class="nav-tab" onclick="showTab('queue')">Queue</button>
+    <button class="nav-tab" onclick="showTab('video')">Video</button>
     <button class="nav-tab" onclick="showTab('analytics')">Analytics</button>
     <button class="nav-tab" onclick="showTab('revenue')">Revenue</button>
     <button class="nav-tab" onclick="showTab('calendar')">Calendar</button>
@@ -1324,6 +1403,68 @@
       </div>
     </div>
 
+    <!-- VIDEO -->
+    <div class="panel" id="panel-video">
+      <div class="section-header">
+        <span class="section-title">Video Studio</span>
+        <button class="section-action" id="autopilot-btn" onclick="runAutoPilot()">Auto-Pilot →</button>
+      </div>
+
+      <div class="generate-box">
+        <div style="font-size:9px;letter-spacing:6px;color:var(--gold);margin-bottom:16px">GENERATE VIDEO</div>
+        <div class="video-form-row">
+          <textarea id="video-prompt" class="video-input" rows="3" placeholder="Paste your script or describe the video..."></textarea>
+        </div>
+        <div class="video-form-row">
+          <select class="video-select" id="video-model">
+            <option value="minimax/hailuo-02">Hailuo 02 — Best quality</option>
+            <option value="minimax/hailuo-02-fast">Hailuo 02 Fast — Quick render</option>
+            <option value="wan-video/wan2.1-t2v-480p">Wan 2.1 — Budget friendly</option>
+          </select>
+          <select class="video-select" id="video-duration">
+            <option value="5">5 seconds</option>
+            <option value="6" selected>6 seconds</option>
+            <option value="8">8 seconds</option>
+            <option value="10">10 seconds</option>
+          </select>
+          <button class="gen-btn" id="video-gen-btn" onclick="generateVideo()">Generate Video</button>
+        </div>
+        <div class="progress-bar-wrap" id="video-progress-wrap" style="display:none">
+          <div class="progress-bar-fill" id="video-progress-fill"></div>
+        </div>
+        <div id="video-status-msg" style="font-size:11px;color:var(--white-dim);letter-spacing:3px;margin-top:8px"></div>
+      </div>
+
+      <div class="video-pipeline" id="pipeline-steps">
+        <div class="pipeline-step" id="step-script">
+          <div class="step-num">STEP 01</div>
+          <div class="step-title">Script</div>
+          <div class="step-desc">AI generates script based on trending topic</div>
+          <div class="step-status" id="step-script-status">Ready</div>
+        </div>
+        <div class="pipeline-step" id="step-video">
+          <div class="step-num">STEP 02</div>
+          <div class="step-title">Video Generation</div>
+          <div class="step-desc">Replicate AI renders video from script</div>
+          <div class="step-status" id="step-video-status">Waiting</div>
+        </div>
+        <div class="pipeline-step" id="step-thumb">
+          <div class="step-num">STEP 03</div>
+          <div class="step-title">Thumbnail</div>
+          <div class="step-desc">Auto-generated from video title</div>
+          <div class="step-status" id="step-thumb-status">Waiting</div>
+        </div>
+        <div class="pipeline-step" id="step-upload">
+          <div class="step-num">STEP 04</div>
+          <div class="step-title">Upload to YouTube</div>
+          <div class="step-desc">Auto-posts with title, description, tags</div>
+          <div class="step-status" id="step-upload-status">Waiting</div>
+        </div>
+      </div>
+
+      <div id="video-result"></div>
+    </div>
+
     <!-- SETTINGS -->
     <div class="panel" id="panel-settings">
       <div class="section-header">
@@ -1354,6 +1495,16 @@
             <div class="settings-sub">Flask server endpoint</div>
           </div>
           <input class="settings-input" type="text" id="vps-url" placeholder="https://...">
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Video Generation</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Replicate API Key</div>
+            <div class="settings-sub">Required for AI video generation</div>
+          </div>
+          <input class="settings-input" type="password" id="replicate-key" placeholder="r8_...">
         </div>
       </div>
       <div class="settings-section">
@@ -1428,14 +1579,17 @@ function loadSettings() {
   if (s.vpsUrl) document.getElementById('vps-url').value = s.vpsUrl;
   if (s.scriptLen) document.getElementById('script-len').value = s.scriptLen;
   if (s.refreshInterval) document.getElementById('refresh-interval').value = s.refreshInterval;
+  if (s.replicateKey) { const el = document.getElementById('replicate-key'); if (el) el.value = s.replicateKey; }
 }
 
 function saveSettings() {
   state.settings.ytKey = document.getElementById('yt-key').value.trim();
+  state.settings.replicateKey = document.getElementById('replicate-key')?.value.trim() || '';
   state.settings.antKey = document.getElementById('ant-key').value.trim();
   state.settings.vpsUrl = document.getElementById('vps-url').value.trim();
   state.settings.scriptLen = parseInt(document.getElementById('script-len').value) || 150;
   state.settings.refreshInterval = parseInt(document.getElementById('refresh-interval').value) || 30;
+  state.settings.replicateKey = document.getElementById('replicate-key')?.value.trim() || '';
   localStorage.setItem('awys-settings', JSON.stringify(state.settings));
   showToast('Settings saved');
 }
@@ -1889,6 +2043,321 @@ async function loadYouTubeStats() {
       document.getElementById('yt-videos').textContent = formatNum(data.videos);
     }
   } catch(e) {}
+}
+
+
+// ── VIDEO GENERATION ──
+let currentPredictionId = null;
+let videoPollingInterval = null;
+
+async function generateVideo() {
+  const prompt = document.getElementById('video-prompt').value.trim();
+  const vpsUrl = state.settings.vpsUrl;
+  const replicateKey = state.settings.replicateKey;
+  const model = document.getElementById('video-model').value;
+  const duration = parseInt(document.getElementById('video-duration').value);
+
+  if (!prompt) { showToast('Enter a prompt first'); return; }
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
+  if (!replicateKey) { showToast('Add Replicate API key in Settings'); return; }
+
+  const btn = document.getElementById('video-gen-btn');
+  btn.disabled = true; btn.textContent = 'Starting...';
+
+  setStepStatus('video', 'running', 'Generating...');
+  document.getElementById('video-progress-wrap').style.display = 'block';
+  setProgress(10);
+  setVideoMsg('Sending to Replicate AI...');
+
+  try {
+    const res = await fetch(vpsUrl + '/video/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, replicate_key: replicateKey, model, duration })
+    });
+    const data = await res.json();
+    if (data.error) { showToast('Error: ' + data.error); resetVideoBtn(); return; }
+
+    currentPredictionId = data.prediction_id;
+    setVideoMsg('Video rendering — this takes 1-3 minutes...');
+    setProgress(20);
+    pollVideoStatus(replicateKey, vpsUrl);
+
+  } catch(e) {
+    showToast('Cannot reach VPS');
+    resetVideoBtn();
+  }
+}
+
+function pollVideoStatus(replicateKey, vpsUrl) {
+  if (videoPollingInterval) clearInterval(videoPollingInterval);
+  let progress = 20;
+
+  videoPollingInterval = setInterval(async () => {
+    try {
+      const res = await fetch(vpsUrl + '/video/status/' + currentPredictionId + '?key=' + replicateKey);
+      const data = await res.json();
+
+      progress = Math.min(progress + 5, 85);
+      setProgress(progress);
+
+      if (data.status === 'succeeded' && data.output) {
+        clearInterval(videoPollingInterval);
+        setProgress(90);
+        setVideoMsg('Downloading video...');
+
+        const videoUrl = Array.isArray(data.output) ? data.output[0] : data.output;
+        const dlRes = await fetch(vpsUrl + '/video/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: videoUrl, filename: 'generated_video.mp4' })
+        });
+        const dlData = await dlRes.json();
+
+        if (dlData.success) {
+          setProgress(100);
+          setStepStatus('video', 'done', 'Complete');
+          setStepStatus('thumb', 'done', 'Generated');
+          setVideoMsg('Video ready — uploading to YouTube...');
+          await autoUploadVideo();
+        }
+      } else if (data.status === 'failed') {
+        clearInterval(videoPollingInterval);
+        setStepStatus('video', 'error', 'Failed');
+        showToast('Video generation failed');
+        resetVideoBtn();
+      }
+    } catch(e) {
+      console.log('Polling error:', e);
+    }
+  }, 5000);
+}
+
+async function autoUploadVideo() {
+  const vpsUrl = state.settings.vpsUrl;
+  const prompt = document.getElementById('video-prompt').value.trim();
+  const title = prompt.substring(0, 80);
+
+  setStepStatus('upload', 'running', 'Uploading...');
+
+  try {
+    const res = await fetch(vpsUrl + '/youtube/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title,
+        description: prompt + '\n\nFollow for daily AI tool reviews.\n\n#AItools #shorts #ChatGPT #artificialintelligence',
+        tags: ['AI tools', 'ChatGPT', 'artificial intelligence', 'shorts', 'AI tutorial'],
+        video_path: '/root/awys/generated_video.mp4',
+        privacy: 'public'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      setStepStatus('upload', 'done', 'Posted');
+      showToast('Video live on YouTube!');
+      document.getElementById('video-result').innerHTML =
+        '<div style="padding:20px;border:1px solid rgba(107,175,138,0.4);margin-top:24px">' +
+        '<div style="font-size:9px;letter-spacing:6px;color:var(--success);margin-bottom:12px">PUBLISHED</div>' +
+        '<a href="' + data.url + '" target="_blank" style="color:var(--gold);font-size:14px;text-decoration:none">' + data.url + '</a>' +
+        '</div>';
+      loadAnalytics();
+    }
+  } catch(e) {
+    setStepStatus('upload', 'error', 'Failed');
+    showToast('Upload failed — check VPS');
+  }
+  resetVideoBtn();
+}
+
+function setStepStatus(step, state, text) {
+  const el = document.getElementById('step-' + step + '-status');
+  const card = document.getElementById('step-' + step);
+  if (el) { el.textContent = text; el.className = 'step-status ' + state; }
+  if (card) { card.className = 'pipeline-step ' + (state === 'done' ? 'done' : state === 'running' ? 'active' : ''); }
+}
+
+function setProgress(pct) {
+  const el = document.getElementById('video-progress-fill');
+  if (el) el.style.width = pct + '%';
+}
+
+function setVideoMsg(msg) {
+  const el = document.getElementById('video-status-msg');
+  if (el) el.textContent = msg;
+}
+
+function resetVideoBtn() {
+  const btn = document.getElementById('video-gen-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Generate Video'; }
+}
+
+// ── AUTO-PILOT ──
+async function runAutoPilot() {
+  const vpsUrl = state.settings.vpsUrl;
+  const antKey = state.settings.antKey;
+  if (!antKey || !vpsUrl) { showToast('Add API keys in Settings first'); return; }
+  if (!state.settings.replicateKey) { showToast('Add Replicate API key in Settings'); return; }
+
+  showToast('Auto-Pilot starting...');
+
+  // Step 1 — Pick top trending topic
+  if (!state.trends.length) await loadTrends();
+  const trend = state.trends.find(t => t.hot) || state.trends[0];
+  if (!trend) { showToast('No trends loaded'); return; }
+
+  showTab('video');
+  setStepStatus('script', 'running', 'Generating...');
+
+  // Step 2 — Generate script
+  try {
+    const scriptRes = await fetch(vpsUrl + '/generate-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topic: trend.title, platform: 'youtube', key: antKey, length: 120 })
+    });
+    const scriptData = await scriptRes.json();
+    if (scriptData.error) { showToast('Script error: ' + scriptData.error); return; }
+
+    setStepStatus('script', 'done', 'Complete');
+
+    // Extract hook for video prompt
+    const hookMatch = scriptData.script.match(/HOOK:\s*(.+)/i);
+    const hook = hookMatch ? hookMatch[1].trim() : trend.title;
+    const videoPrompt = 'Short-form video: ' + hook + '. Topic: ' + trend.title + '. Modern, engaging, tech content creator style. Vertical 9:16 format.';
+
+    document.getElementById('video-prompt').value = videoPrompt;
+    showToast('Script done — generating video...');
+    generateVideo();
+
+  } catch(e) {
+    showToast('Auto-Pilot error: ' + e.message);
+  }
+}
+
+// ── REAL-TIME ANALYTICS ──
+let analyticsInterval = null;
+
+function startRealtimeAnalytics() {
+  if (analyticsInterval) return;
+  // Sync every 5 minutes
+  analyticsInterval = setInterval(() => {
+    syncAnalyticsFromServer();
+  }, 5 * 60 * 1000);
+}
+
+async function syncAnalyticsFromServer() {
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) return;
+  try {
+    const res = await fetch(vpsUrl + '/analytics/sync', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      updateAnalyticsUI(data.data);
+    }
+  } catch(e) {}
+}
+
+async function loadAnalytics() {
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
+
+  const today = new Date();
+  const dayLabels = ['S','M','T','W','T','F','S'];
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    labels.push(dayLabels[d.getDay()]);
+  }
+  const labelContainer = document.getElementById('chart-labels');
+  if (labelContainer) labelContainer.innerHTML = labels.map(l => '<div class="chart-label">' + l + '</div>').join('');
+
+  const bars = document.querySelectorAll('#chart-views .bar');
+  bars.forEach((b, i) => { b.classList.remove('active'); if (i === 6) b.classList.add('active'); });
+
+  const syncEl = document.getElementById('a-synced');
+  if (syncEl) syncEl.textContent = today.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+
+  // First try to get cached data
+  try {
+    const cacheRes = await fetch(vpsUrl + '/analytics/data');
+    const cacheData = await cacheRes.json();
+    if (cacheData.youtube && cacheData.youtube.name) {
+      updateAnalyticsUI(cacheData);
+    }
+  } catch(e) {}
+
+  // Then sync fresh from YouTube
+  try {
+    const res = await fetch(vpsUrl + '/analytics/sync', { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      updateAnalyticsUI(data.data);
+      showToast('Analytics synced from YouTube');
+    } else if (data.error && data.error.includes('quota')) {
+      showToast('YouTube quota exceeded — resets midnight Pacific');
+    }
+  } catch(e) {
+    showToast('Could not sync — check VPS connection');
+  }
+
+  startRealtimeAnalytics();
+}
+
+function updateAnalyticsUI(data) {
+  const yt = data.youtube || {};
+  const subs = yt.subscribers || 0;
+  const views = yt.views || 0;
+  const videos = yt.videos || 0;
+
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+  setEl('a-views', formatNum(views));
+  setEl('a-followers', formatNum(subs));
+  setEl('a-posts', videos);
+  setEl('yt-views-label', formatNum(views) + ' views');
+  setEl('yt-name', yt.name || '—');
+  setEl('yt-total-views', formatNum(views));
+  setEl('yt-total-subs', formatNum(subs));
+  setEl('yt-total-videos', videos);
+  setEl('ms-500', subs + ' / 500');
+  setEl('ms-1000', subs + ' / 1,000');
+  setEl('ms-4000', '0 / 4,000');
+
+  const monetizeEl = document.getElementById('ms-monetize');
+  if (monetizeEl) {
+    monetizeEl.textContent = subs >= 1000 ? 'Eligible' : 'Not eligible yet';
+    monetizeEl.className = 'analytics-val ' + (subs >= 1000 ? 'up' : 'down');
+  }
+
+  const deltaViews = document.getElementById('a-views-delta');
+  if (deltaViews) deltaViews.textContent = views > 0 ? '↑ Growing' : '↑ Getting started';
+  const deltaSubs = document.getElementById('a-subs-delta');
+  if (deltaSubs) deltaSubs.textContent = subs > 0 ? '↑ Growing' : '↑ Getting started';
+
+  // Update chart with history data
+  if (data.history && data.history.length > 0) {
+    const history = data.history.slice(-7);
+    const maxViews = Math.max(...history.map(h => h.views), 1);
+    const bars = document.querySelectorAll('#chart-views .bar');
+    bars.forEach((bar, i) => {
+      const entry = history[i] || { views: 0 };
+      const pct = Math.max((entry.views / maxViews) * 100, 5);
+      bar.style.height = pct + '%';
+    });
+  }
+
+  // Recent videos
+  if (data.recent_videos && data.recent_videos.length > 0) {
+    const topCard = document.querySelector('#panel-analytics .analytics-card:nth-child(3)');
+    if (topCard) {
+      topCard.innerHTML = '<div class="analytics-title">Recent Videos</div>' +
+        data.recent_videos.slice(0, 4).map(v =>
+          '<div class="analytics-row"><span class="analytics-label" style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + v.title + '</span>' +
+          '<span class="analytics-val">' + formatNum(v.views) + ' views</span></div>'
+        ).join('');
+    }
+  }
 }
 
 // ── MODAL CLOSE ON OVERLAY ──
