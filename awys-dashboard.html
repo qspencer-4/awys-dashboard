@@ -664,6 +664,82 @@
     .settings-row { flex-direction: column; align-items: flex-start; gap: 12px; }
     .revenue-amount { font-size: 48px; }
   }
+
+  /* ── CALENDAR ── */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+    margin-bottom: 40px;
+  }
+  .cal-day {
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    padding: 24px;
+    transition: background 0.2s;
+  }
+  .cal-day:hover { background: var(--surface-hover); }
+  .cal-day-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--white-faint);
+  }
+  .cal-day-name {
+    font-size: 9px; letter-spacing: 6px;
+    color: var(--gold); text-transform: uppercase;
+  }
+  .cal-day-num {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--white-dim);
+  }
+  .cal-title {
+    font-size: 14px; font-weight: 300;
+    color: var(--white); line-height: 1.5;
+    margin-bottom: 10px;
+  }
+  .cal-hook {
+    font-size: 11px; color: var(--white-dim);
+    line-height: 1.6; margin-bottom: 14px;
+    font-style: italic;
+  }
+  .cal-meta {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .cal-tag {
+    font-size: 9px; letter-spacing: 3px;
+    padding: 3px 8px; border: 1px solid var(--white-border);
+    color: var(--white-dim); text-transform: uppercase;
+  }
+  .cal-tag.affiliate {
+    border-color: var(--gold-dim); color: var(--gold);
+  }
+  .cal-actions { display: flex; gap: 16px; }
+  .cal-btn {
+    font-size: 10px; letter-spacing: 4px;
+    color: var(--white-dim); background: none;
+    border: none; cursor: pointer;
+    text-transform: uppercase;
+    font-family: var(--font-main); font-weight: 300;
+    transition: color 0.2s; padding: 0;
+  }
+  .cal-btn:hover { color: var(--gold); }
+  .cal-loading {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1px;
+  }
+  .cal-skeleton {
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    padding: 24px; height: 200px;
+    animation: shimmer 1.5s ease infinite alternate;
+  }
+  @keyframes shimmer {
+    from { opacity: 0.3; } to { opacity: 0.7; }
+  }
+
 </style>
 </head>
 <body>
@@ -685,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.01</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.02</div>
   </header>
 
   <nav>
@@ -695,6 +771,7 @@
     <button class="nav-tab" onclick="showTab('queue')">Queue</button>
     <button class="nav-tab" onclick="showTab('analytics')">Analytics</button>
     <button class="nav-tab" onclick="showTab('revenue')">Revenue</button>
+    <button class="nav-tab" onclick="showTab('calendar')">Calendar</button>
     <button class="nav-tab" onclick="showTab('changelog')">Changelog</button>
     <button class="nav-tab" onclick="showTab('settings')">Settings</button>
   </nav>
@@ -964,6 +1041,25 @@
           </div>
         </div>
         <div class="analytics-card">
+          <div class="analytics-title">Affiliate Programs</div>
+          <div class="analytics-row">
+            <span class="analytics-label">Jasper AI — 30% recurring</span>
+            <span class="analytics-val"><a href="https://www.jasper.ai/affiliates" target="_blank" style="color:var(--gold);text-decoration:none">Apply →</a></span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Writesonic — 30% recurring</span>
+            <span class="analytics-val"><a href="https://writesonic.com/affiliates" target="_blank" style="color:var(--gold);text-decoration:none">Apply →</a></span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Pictory — 20% recurring</span>
+            <span class="analytics-val"><a href="https://pictory.ai/affiliates" target="_blank" style="color:var(--gold);text-decoration:none">Apply →</a></span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Murf AI — 25% recurring</span>
+            <span class="analytics-val"><a href="https://murf.ai/affiliates" target="_blank" style="color:var(--gold);text-decoration:none">Apply →</a></span>
+          </div>
+        </div>
+        <div class="analytics-card">
           <div class="analytics-title">Milestones</div>
           <div class="analytics-row">
             <span class="analytics-label">YouTube — 500 subs</span>
@@ -992,7 +1088,7 @@
       </div>
       <div class="changelog-list">
         <div class="changelog-item">
-          <div class="changelog-version">v0.01</div>
+          <div class="changelog-version">v0.02</div>
           <div class="changelog-content">
             <div class="changelog-date">April 2026 — Initial Release</div>
             <ul class="changelog-changes">
@@ -1012,6 +1108,37 @@
             </ul>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div class="panel" id="panel-calendar">
+      <div class="section-header">
+        <span class="section-title">Content Calendar</span>
+        <button class="section-action" id="cal-gen-btn" onclick="generateCalendar()">Generate Week</button>
+      </div>
+      <div class="generate-box" id="cal-niche-box">
+        <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap">
+          <div>
+            <div class="stat-label" style="margin-bottom:6px">Niche</div>
+            <div style="font-size:13px;color:var(--white);font-weight:300">AI Tools for Everyday People</div>
+          </div>
+          <div>
+            <div class="stat-label" style="margin-bottom:6px">Angle</div>
+            <div style="font-size:13px;color:var(--white);font-weight:300">"I tested this AI so you don't have to"</div>
+          </div>
+          <div>
+            <div class="stat-label" style="margin-bottom:6px">Hook Style</div>
+            <div style="font-size:13px;color:var(--white);font-weight:300">Practical value in every video</div>
+          </div>
+          <div>
+            <div class="stat-label" style="margin-bottom:6px">Monetization</div>
+            <div style="font-size:13px;color:var(--gold);font-weight:300">YouTube Ads + AI Affiliate Links</div>
+          </div>
+        </div>
+      </div>
+      <div id="calendar-container">
+        <div class="empty"><div class="empty-text">Hit Generate Week to build your content calendar</div></div>
       </div>
     </div>
 
@@ -1401,6 +1528,158 @@ function showToast(msg) {
 document.getElementById('script-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+
+
+// ── CONTENT CALENDAR ──
+const NICHE = {
+  topic: 'AI tools for everyday people',
+  angle: 'I tested this AI so you don\'t have to',
+  hook: 'Practical value — show the result first, explain second',
+  monetize: 'YouTube ads + AI tool affiliate links'
+};
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+async function generateCalendar() {
+  const antKey = state.settings.antKey;
+  const vpsUrl = state.settings.vpsUrl;
+
+  if (!antKey || !vpsUrl) {
+    showToast('Add API keys in Settings first');
+    return;
+  }
+
+  const btn = document.getElementById('cal-gen-btn');
+  btn.textContent = 'Generating...';
+
+  document.getElementById('calendar-container').innerHTML = `
+    <div class="cal-loading">
+      ${Array(7).fill('<div class="cal-skeleton"></div>').join('')}
+    </div>`;
+
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  try {
+    const res = await fetch(vpsUrl + '/generate-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: `Generate a 7-day content calendar for a YouTube Shorts / TikTok / Instagram Reels channel.
+
+NICHE: ${NICHE.topic}
+ANGLE: "${NICHE.angle}"
+HOOK STYLE: ${NICHE.hook}
+MONETIZATION: ${NICHE.monetize}
+WEEK OF: ${dateStr}
+
+For each of the 7 days provide:
+- DAY: (Monday through Sunday)
+- TITLE: (video title, clickable and curiosity-driven, under 60 chars)
+- HOOK: (opening line spoken to camera, under 15 words)
+- FORMAT: (Tutorial / Review / Comparison / News / Story / List)
+- AFFILIATE: (suggest one relevant AI tool to feature with affiliate potential, or "None")
+- TAGS: (3 hashtags)
+
+Respond in this exact format repeated 7 times, no extra text:
+
+DAY: Monday
+TITLE: ...
+HOOK: ...
+FORMAT: ...
+AFFILIATE: ...
+TAGS: ...
+
+---`,
+        platform: 'youtube',
+        key: antKey,
+        length: 400
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) { showToast('Error: ' + data.error); btn.textContent = 'Generate Week'; return; }
+
+    parseAndRenderCalendar(data.script, today);
+
+  } catch(e) {
+    showToast('Cannot reach VPS — check Settings');
+  }
+
+  btn.textContent = 'Generate Week';
+}
+
+function parseAndRenderCalendar(text, startDate) {
+  const blocks = text.split('---').map(b => b.trim()).filter(Boolean);
+  const days = [];
+
+  blocks.forEach((block, i) => {
+    const get = (key) => {
+      const match = block.match(new RegExp(key + ':(.+)'));
+      return match ? match[1].trim() : '';
+    };
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    days.push({
+      day: get('DAY') || DAYS[i] || `Day ${i+1}`,
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      title: get('TITLE'),
+      hook: get('HOOK'),
+      format: get('FORMAT'),
+      affiliate: get('AFFILIATE'),
+      tags: get('TAGS')
+    });
+  });
+
+  if (!days.length) {
+    document.getElementById('calendar-container').innerHTML =
+      '<div class="empty"><div class="empty-text">Could not parse calendar — try again</div></div>';
+    return;
+  }
+
+  document.getElementById('calendar-container').innerHTML = `
+    <div class="calendar-grid">
+      ${days.map((d, i) => `
+        <div class="cal-day">
+          <div class="cal-day-header">
+            <div class="cal-day-name">${d.day}</div>
+            <div class="cal-day-num">${d.date}</div>
+          </div>
+          <div class="cal-title">${d.title || 'Generating...'}</div>
+          <div class="cal-hook">"${d.hook || ''}"</div>
+          <div class="cal-meta">
+            ${d.format ? `<span class="cal-tag">${d.format}</span>` : ''}
+            ${d.affiliate && d.affiliate.toLowerCase() !== 'none' ? `<span class="cal-tag affiliate">${d.affiliate}</span>` : ''}
+          </div>
+          <div style="font-size:11px;color:var(--white-dim);margin-bottom:14px">${d.tags}</div>
+          <div class="cal-actions">
+            <button class="cal-btn" onclick="scriptFromCalendar('${d.title.replace(/'/g, "\'")}')">Write Script →</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function scriptFromCalendar(title) {
+  showTab('scripts');
+  document.getElementById('script-topic').value = title;
+  showToast('Topic loaded — hit Generate');
+}
+
+// ── UPGRADE SCRIPT GENERATOR WITH NICHE DNA ──
+const _originalGenerate = generateScript;
+generateScript = async function() {
+  const topic = document.getElementById('script-topic').value.trim();
+  if (topic) {
+    // Inject niche context into topic before generating
+    const nicheContext = `[NICHE: AI tools for everyday people | ANGLE: "I tested this AI so you don't have to" | Always include: practical value, specific result, soft affiliate mention if relevant] TOPIC: ${topic}`;
+    document.getElementById('script-topic').value = nicheContext;
+    await _originalGenerate();
+    document.getElementById('script-topic').value = topic;
+  } else {
+    await _originalGenerate();
+  }
+};
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
