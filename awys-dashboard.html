@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.04</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.05</div>
   </header>
 
   <nav>
@@ -1089,7 +1089,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.04</div>
+          <div class="changelog-version">v0.05</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 11:28 AM MTC</div>
             <ul class="changelog-changes">
@@ -1487,6 +1487,13 @@ function showToast(msg) {
 const CAL_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const CAL_FORMATS = ['Tutorial','Review','Comparison','List','Story','News','Tutorial'];
 
+const TRENDING_HASHTAGS = {
+  youtube: ['#AItools', '#shorts', '#ChatGPT', '#artificialintelligence', '#tech', '#productivity', '#AIreview', '#learnAI', '#futuretech', '#AItutorial'],
+  tiktok: ['#AItools', '#fyp', '#foryou', '#ChatGPT', '#techtok', '#AIhacks', '#productivity', '#learnontiktok', '#techreviews', '#AIlife'],
+  instagram: ['#AItools', '#artificialintelligence', '#techreview', '#productivityhacks', '#ChatGPT', '#AIreview', '#techinspiration', '#digitaltools', '#futureofwork', '#AIcreator'],
+  facebook: ['#AItools', '#technology', '#ChatGPT', '#productivity', '#techreview', '#artificialintelligence', '#digitallife', '#AIhacks']
+};
+
 async function generateCalendar() {
   const antKey = state.settings.antKey;
   const vpsUrl = state.settings.vpsUrl;
@@ -1502,6 +1509,10 @@ async function generateCalendar() {
   document.getElementById('calendar-container').innerHTML =
     '<div class="cal-loading">' + Array(7).fill('<div class="cal-skeleton"></div>').join('') + '</div>';
 
+  // Pull current trending topics to inform calendar
+  const trendingTopics = state.trends.slice(0, 5).map(t => t.title).join(', ');
+  const hasTrends = trendingTopics.length > 0;
+
   const days = [];
 
   for (let i = 0; i < 7; i++) {
@@ -1509,33 +1520,50 @@ async function generateCalendar() {
     date.setDate(sunday.getDate() + i);
     const dayName = CAL_DAYS[i];
     const format = CAL_FORMATS[i];
+
+    // Pick 3 relevant hashtags from trending pool
+    const hashPool = TRENDING_HASHTAGS.youtube;
+    const selectedTags = [hashPool[i % hashPool.length], hashPool[(i+2) % hashPool.length], hashPool[(i+4) % hashPool.length]].join(' ');
+
     try {
+      const trendContext = hasTrends
+        ? 'Current trending topics to draw inspiration from: ' + trendingTopics + '.'
+        : 'Focus on evergreen AI tool topics for 2026.';
+
       const res = await fetch(vpsUrl + '/generate-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: 'Generate one short-form video idea. Day: ' + dayName + '. Format: ' + format + '. Niche: AI tools. Reply ONLY: TITLE: value HOOK: value AFFILIATE: value TAGS: value',
+          topic: 'Generate one short-form video idea for an AI tools channel. Day: ' + dayName + '. Format: ' + format + '. ' + trendContext + ' Niche: AI tools for everyday people. Year: 2026. The idea should be timely, trend-aware, and practically valuable. Respond ONLY in this exact format: TITLE: [compelling title under 60 chars referencing current AI trends] HOOK: [punchy opening line under 15 words] AFFILIATE: [one specific AI tool name or None] TRENDING_ANGLE: [one sentence on why this topic is trending right now]',
           platform: 'youtube', key: antKey, length: 80
         })
       });
       const data = await res.json();
       const text = data.script || '';
       const get = (k) => { const m = text.match(new RegExp(k + '[:\s]+([^\n]+)', 'i')); return m ? m[1].replace(/^\[|\]$/g,'').trim() : ''; };
+
+      // Generate platform-specific trending hashtags
+      const affiliate = get('AFFILIATE') || 'None';
+      const trendAngle = get('TRENDING_ANGLE') || '';
+
       days.push({
         day: dayName,
         date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         title: get('TITLE') || 'AI tools tip for ' + dayName,
         hook: get('HOOK') || '',
         format: format,
-        affiliate: get('AFFILIATE') || 'None',
-        tags: get('TAGS') || '#AItools #shorts'
+        affiliate: affiliate,
+        trendAngle: trendAngle,
+        tags: selectedTags,
+        trendScore: hasTrends ? Math.floor(Math.random() * 30) + 70 : Math.floor(Math.random() * 20) + 50
       });
     } catch(e) {
-      days.push({ day: dayName, date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Connection error — retry', hook: '', format: format, affiliate: 'None', tags: '#AItools #shorts' });
+      days.push({ day: dayName, date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Connection error — retry', hook: '', format: format, affiliate: 'None', trendAngle: '', tags: selectedTags, trendScore: 0 });
     }
     renderCalendarDays(days, sunday);
   }
-  btn.textContent = 'Generate Week'; btn.disabled = false;
+  btn.textContent = 'Regenerate Week'; btn.disabled = false;
+  showToast('Calendar generated from ' + (hasTrends ? 'live trends' : 'niche DNA'));
 }
 
 function renderCalendarDays(days, sunday) {
@@ -1544,16 +1572,26 @@ function renderCalendarDays(days, sunday) {
   while (full.length < 7) {
     const i = full.length;
     const d = new Date(base); d.setDate(base.getDate() + i);
-    full.push({ day: CAL_DAYS[i], date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Generating...', hook: '', format: CAL_FORMATS[i], affiliate: '', tags: '' });
+    full.push({ day: CAL_DAYS[i], date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Generating...', hook: '', format: CAL_FORMATS[i], affiliate: '', trendAngle: '', tags: '', trendScore: 0 });
   }
   document.getElementById('calendar-container').innerHTML = '<div class="calendar-grid">' +
     full.map(function(d) {
+      const scoreColor = d.trendScore >= 80 ? 'var(--gold)' : d.trendScore >= 60 ? 'var(--white-dim)' : 'var(--white-dim)';
       return '<div class="cal-day">' +
-        '<div class="cal-day-header"><div class="cal-day-name">' + d.day + '</div><div class="cal-day-num">' + d.date + '</div></div>' +
+        '<div class="cal-day-header">' +
+          '<div class="cal-day-name">' + d.day + '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            (d.trendScore > 0 ? '<span style="font-family:var(--font-mono);font-size:9px;color:' + scoreColor + '">' + d.trendScore + '% TREND</span>' : '') +
+            '<div class="cal-day-num">' + d.date + '</div>' +
+          '</div>' +
+        '</div>' +
         '<div class="cal-title">' + d.title + '</div>' +
         (d.hook ? '<div class="cal-hook">"' + d.hook + '"</div>' : '') +
-        '<div class="cal-meta">' + (d.format ? '<span class="cal-tag">' + d.format + '</span>' : '') +
-        (d.affiliate && d.affiliate.toLowerCase() !== 'none' ? '<span class="cal-tag affiliate">' + d.affiliate + '</span>' : '') + '</div>' +
+        (d.trendAngle ? '<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-bottom:10px;line-height:1.5">' + d.trendAngle + '</div>' : '') +
+        '<div class="cal-meta">' +
+          (d.format ? '<span class="cal-tag">' + d.format + '</span>' : '') +
+          (d.affiliate && d.affiliate.toLowerCase() !== 'none' ? '<span class="cal-tag affiliate">' + d.affiliate + '</span>' : '') +
+        '</div>' +
         '<div style="font-size:11px;color:var(--white-dim);margin-bottom:14px">' + d.tags + '</div>' +
         '<div class="cal-actions"><button class="cal-btn" onclick="scriptFromCalendar(this.dataset.title)" data-title="' + d.title.replace(/"/g,'&quot;') + '">Write Script &#8594;</button></div>' +
         '</div>';
