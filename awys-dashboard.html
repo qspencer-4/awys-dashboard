@@ -761,7 +761,7 @@
       <div class="header-a">A</div>
       <div class="header-name">AI While You Sleeping</div>
     </div>
-    <div class="header-version" onclick="showTab('changelog')">v0.06</div>
+    <div class="header-version" onclick="showTab('changelog')">v0.07</div>
   </header>
 
   <nav>
@@ -1089,7 +1089,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.06</div>
+          <div class="changelog-version">v0.07</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 11:28 AM MTC</div>
             <ul class="changelog-changes">
@@ -1539,7 +1539,7 @@ async function generateCalendar() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: 'Generate one short-form video idea strictly about AI tools for everyday people. Day: ' + dayName + '. Format: ' + format + '. Year: 2026. ' + trendContext + ' STRICT RULES: The video MUST be about an actual AI tool, feature, or practical AI use case. Never use pets, celebrities, or non-AI viral trends as the subject. The AI tool or use case IS the story. Respond ONLY in this exact format with real content: TITLE: [compelling title about a specific AI tool or use case, under 60 chars] HOOK: [punchy opening line about AI, under 10 words, no placeholder text] AFFILIATE: [one specific real AI tool name like Jasper/Runway/Midjourney/Writesonic or None] TRENDING_ANGLE: [one sentence on why this AI topic is relevant in 2026]',
+          topic: 'Generate one short-form video idea for an AI tools channel targeting everyday beginners. Day: ' + dayName + '. Format: ' + format + '. Year: 2026. ' + trendContext + ' TARGET VIEWER: Someone who has heard of ChatGPT but not explored AI much. They want simple, surprising, practical content that sparks curiosity. RULES: Topic must be a trending or popular AI tool or use case. Connect it to everyday life. Create a wow moment. Use simple language in the title. Respond ONLY in this exact format: TITLE: [simple relatable title that sparks curiosity, under 60 chars, no jargon] HOOK: [relatable opening line a beginner would connect with, under 10 words] AFFILIATE: [one specific real AI tool name or None] TRENDING_ANGLE: [one sentence why this AI topic matters to everyday people right now]',
           platform: 'youtube', key: antKey, length: 80
         })
       });
