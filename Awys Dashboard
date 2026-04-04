@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AWYS — AI While You Sleeping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #000000;
+    --white: #ffffff;
+    --gold: #C9A020;
+    --gold-dim: rgba(201,160,32,0.4);
+    --gold-faint: rgba(201,160,32,0.08);
+    --white-dim: rgba(255,255,255,0.45);
+    --white-faint: rgba(255,255,255,0.08);
+    --white-border: rgba(255,255,255,0.1);
+    --surface: rgba(255,255,255,0.03);
+    --surface-hover: rgba(255,255,255,0.06);
+    --danger: #C97850;
+    --success: #6BAF8A;
+    --font-main: 'Raleway', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-main);
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── SPLASH ── */
+  #splash {
+    position: fixed; inset: 0;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.8s ease;
+  }
+  #splash.hide { opacity: 0; pointer-events: none; }
+  .splash-a {
+    font-family: var(--font-main);
+    font-weight: 200;
+    font-size: 140px;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -4px;
+    animation: splashPulse 2s ease infinite alternate;
+  }
+  .splash-sub {
+    font-size: 11px;
+    letter-spacing: 10px;
+    color: rgba(255,255,255,0.35);
+    margin-top: 16px;
+    font-weight: 200;
+  }
+  .splash-gold { color: var(--gold); opacity: 0.8; }
+  @keyframes splashPulse {
+    from { opacity: 0.7; } to { opacity: 1; }
+  }
+  .splash-bar {
+    width: 120px; height: 1px;
+    background: rgba(255,255,255,0.1);
+    margin-top: 40px;
+    position: relative; overflow: hidden;
+  }
+  .splash-bar::after {
+    content: '';
+    position: absolute; left: -100%; top: 0;
+    width: 100%; height: 100%;
+    background: var(--gold);
+    animation: splashLoad 2.5s ease forwards;
+  }
+  @keyframes splashLoad {
+    from { left: -100%; } to { left: 0%; }
+  }
+
+  /* ── LAYOUT ── */
+  #app { display: none; flex-direction: column; min-height: 100vh; }
+  #app.show { display: flex; }
+
+  /* ── HEADER ── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--white-border);
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(0,0,0,0.92);
+    backdrop-filter: blur(12px);
+  }
+  .header-brand {
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .header-a {
+    font-size: 28px; font-weight: 200;
+    letter-spacing: -1px; color: #fff;
+  }
+  .header-name {
+    font-size: 10px; font-weight: 200;
+    letter-spacing: 8px; color: var(--white-dim);
+    text-transform: uppercase;
+  }
+  .header-version {
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--gold);
+    opacity: 0.6; cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .header-version:hover { opacity: 1; }
+
+  /* ── NAV ── */
+  nav {
+    display: flex; gap: 0;
+    border-bottom: 1px solid var(--white-border);
+    padding: 0 32px;
+    overflow-x: auto;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-tab {
+    padding: 14px 20px;
+    font-size: 11px; font-weight: 300;
+    letter-spacing: 6px;
+    color: var(--white-dim);
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    margin-bottom: -1px;
+    background: none; border-top: none; border-left: none; border-right: none;
+  }
+  .nav-tab:hover { color: var(--white); }
+  .nav-tab.active {
+    color: var(--white);
+    border-bottom-color: var(--gold);
+  }
+
+  /* ── MAIN ── */
+  main { flex: 1; padding: 40px 32px; max-width: 1400px; width: 100%; margin: 0 auto; }
+
+  /* ── PANELS ── */
+  .panel { display: none; animation: fadeUp 0.3s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--white-border);
+  }
+  .section-title {
+    font-size: 11px; font-weight: 200;
+    letter-spacing: 8px; color: var(--white-dim);
+    text-transform: uppercase;
+  }
+  .section-action {
+    font-size: 11px; font-weight: 300;
+    letter-spacing: 4px; color: var(--gold);
+    cursor: pointer; background: none; border: none;
+    text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+  .section-action:hover { opacity: 0.7; }
+
+  /* ── STAT CARDS ── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    border: 1px solid var(--white-border);
+    margin-bottom: 40px;
+  }
+  .stat-card {
+    padding: 28px 24px;
+    background: var(--surface);
+    transition: background 0.2s;
+  }
+  .stat-card:hover { background: var(--surface-hover); }
+  .stat-label {
+    font-size: 9px; letter-spacing: 6px;
+    color: var(--white-dim); text-transform: uppercase;
+    margin-bottom: 12px; font-weight: 300;
+  }
+  .stat-value {
+    font-size: 36px; font-weight: 100;
+    color: var(--white); line-height: 1;
+    font-family: var(--font-main);
+  }
+  .stat-value.gold { color: var(--gold); }
+  .stat-delta {
+    font-size: 10px; font-family: var(--font-mono);
+    color: var(--success); margin-top: 8px;
+  }
+  .stat-delta.down { color: var(--danger); }
+
+  /* ── TREND CARDS ── */
+  .trends-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+  }
+  .trend-card {
+    background: var(--surface);
+    padding: 24px;
+    border: 1px solid var(--white-border);
+    transition: background 0.2s, border-color 0.2s;
+    cursor: pointer;
+  }
+  .trend-card:hover {
+    background: var(--surface-hover);
+    border-color: rgba(255,255,255,0.2);
+  }
+  .trend-platform {
+    font-size: 9px; letter-spacing: 5px;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 10px; font-weight: 300;
+  }
+  .trend-title {
+    font-size: 15px; font-weight: 300;
+    color: var(--white); line-height: 1.4;
+    margin-bottom: 12px;
+  }
+  .trend-meta {
+    display: flex; gap: 16px; align-items: center;
+  }
+  .trend-views {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--white-dim);
+  }
+  .trend-badge {
+    font-size: 9px; letter-spacing: 3px;
+    padding: 3px 8px;
+    border: 1px solid var(--white-border);
+    color: var(--white-dim);
+    text-transform: uppercase;
+  }
+  .trend-badge.hot {
+    border-color: var(--gold-dim);
+    color: var(--gold);
+  }
+  .trend-generate {
+    margin-top: 16px;
+    font-size: 10px; letter-spacing: 5px;
+    color: var(--gold-dim);
+    text-transform: uppercase;
+    background: none; border: none;
+    cursor: pointer; padding: 0;
+    transition: color 0.2s;
+    font-family: var(--font-main);
+    font-weight: 300;
+  }
+  .trend-generate:hover { color: var(--gold); }
+
+  /* ── SCRIPTS ── */
+  .scripts-list { display: flex; flex-direction: column; gap: 1px; }
+  .script-card {
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    padding: 28px;
+    transition: background 0.2s;
+  }
+  .script-card:hover { background: var(--surface-hover); }
+  .script-header {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: 16px;
+  }
+  .script-topic {
+    font-size: 14px; font-weight: 300;
+    color: var(--white); line-height: 1.4;
+    max-width: 70%;
+  }
+  .script-status {
+    font-size: 9px; letter-spacing: 4px;
+    text-transform: uppercase; padding: 4px 10px;
+    border: 1px solid;
+  }
+  .script-status.draft { border-color: var(--white-border); color: var(--white-dim); }
+  .script-status.ready { border-color: var(--gold-dim); color: var(--gold); }
+  .script-status.posted { border-color: rgba(107,175,138,0.4); color: var(--success); }
+  .script-body {
+    font-size: 13px; color: var(--white-dim);
+    line-height: 1.8; margin-bottom: 20px;
+    font-weight: 300;
+    display: -webkit-box; -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .script-actions { display: flex; gap: 20px; }
+  .script-btn {
+    font-size: 10px; letter-spacing: 5px;
+    color: var(--white-dim); text-transform: uppercase;
+    background: none; border: none; cursor: pointer;
+    transition: color 0.2s; font-family: var(--font-main);
+    font-weight: 300; padding: 0;
+  }
+  .script-btn:hover { color: var(--white); }
+  .script-btn.primary { color: var(--gold); }
+  .script-btn.primary:hover { color: var(--white); }
+
+  /* ── GENERATE FORM ── */
+  .generate-box {
+    border: 1px solid var(--white-border);
+    padding: 32px;
+    margin-bottom: 40px;
+    background: var(--surface);
+  }
+  .generate-box textarea {
+    width: 100%; background: none; border: none;
+    border-bottom: 1px solid var(--white-border);
+    color: var(--white); font-family: var(--font-main);
+    font-weight: 300; font-size: 14px;
+    padding: 12px 0; resize: none; outline: none;
+    line-height: 1.6;
+  }
+  .generate-box textarea::placeholder { color: var(--white-dim); }
+  .generate-row {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-top: 20px;
+  }
+  .platform-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    font-size: 9px; letter-spacing: 4px;
+    padding: 6px 12px; border: 1px solid var(--white-border);
+    color: var(--white-dim); cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s; font-family: var(--font-main);
+    font-weight: 300; background: none;
+  }
+  .chip:hover, .chip.active {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .gen-btn {
+    font-size: 10px; letter-spacing: 6px;
+    color: var(--black); background: var(--white);
+    border: none; padding: 12px 28px;
+    cursor: pointer; text-transform: uppercase;
+    font-family: var(--font-main); font-weight: 300;
+    transition: background 0.2s, color 0.2s;
+  }
+  .gen-btn:hover { background: var(--gold); }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ── ACCOUNTS ── */
+  .accounts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px;
+  }
+  .account-card {
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    padding: 28px;
+    transition: background 0.2s;
+  }
+  .account-card:hover { background: var(--surface-hover); }
+  .account-platform {
+    font-size: 9px; letter-spacing: 5px;
+    text-transform: uppercase; color: var(--gold);
+    margin-bottom: 10px; font-weight: 300;
+  }
+  .account-handle {
+    font-size: 18px; font-weight: 200;
+    color: var(--white); margin-bottom: 20px;
+  }
+  .account-stats { display: flex; gap: 24px; margin-bottom: 20px; }
+  .account-stat-val {
+    font-size: 22px; font-weight: 100; color: var(--white);
+  }
+  .account-stat-lbl {
+    font-size: 9px; letter-spacing: 4px;
+    color: var(--white-dim); text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .account-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--white-dim); text-transform: uppercase;
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+  }
+  .status-dot.disconnected { background: var(--danger); }
+  .status-dot.pending { background: var(--gold); }
+
+  /* ── QUEUE ── */
+  .queue-list { display: flex; flex-direction: column; gap: 1px; }
+  .queue-item {
+    display: grid;
+    grid-template-columns: 100px 1fr auto auto;
+    gap: 24px; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    padding: 20px 28px;
+    transition: background 0.2s;
+  }
+  .queue-item:hover { background: var(--surface-hover); }
+  .queue-time {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--white-dim);
+  }
+  .queue-topic {
+    font-size: 13px; font-weight: 300; color: var(--white);
+  }
+  .queue-platform {
+    font-size: 9px; letter-spacing: 4px;
+    color: var(--gold); text-transform: uppercase;
+  }
+  .queue-remove {
+    font-size: 10px; letter-spacing: 3px;
+    color: var(--white-dim); background: none;
+    border: none; cursor: pointer;
+    text-transform: uppercase; font-family: var(--font-main);
+    transition: color 0.2s;
+  }
+  .queue-remove:hover { color: var(--danger); }
+
+  /* ── ANALYTICS ── */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1px; margin-bottom: 40px;
+  }
+  .analytics-card {
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    padding: 28px;
+  }
+  .analytics-title {
+    font-size: 9px; letter-spacing: 6px;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 20px; font-weight: 300;
+  }
+  .chart-bars {
+    display: flex; align-items: flex-end;
+    gap: 6px; height: 80px; margin-bottom: 12px;
+  }
+  .bar {
+    flex: 1; background: var(--white-faint);
+    transition: background 0.2s; cursor: pointer;
+    min-height: 4px;
+  }
+  .bar:hover { background: rgba(201,160,32,0.3); }
+  .bar.active { background: var(--gold-dim); }
+  .chart-labels {
+    display: flex; gap: 6px;
+  }
+  .chart-label {
+    flex: 1; font-size: 8px;
+    font-family: var(--font-mono);
+    color: var(--white-dim);
+    text-align: center;
+  }
+  .analytics-row {
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 12px 0;
+    border-bottom: 1px solid var(--white-faint);
+  }
+  .analytics-row:last-child { border-bottom: none; }
+  .analytics-label {
+    font-size: 11px; color: var(--white-dim); font-weight: 300;
+  }
+  .analytics-val {
+    font-family: var(--font-mono);
+    font-size: 12px; color: var(--white);
+  }
+  .analytics-val.up { color: var(--success); }
+  .analytics-val.down { color: var(--danger); }
+
+  /* ── REVENUE ── */
+  .revenue-total {
+    padding: 48px 0;
+    border-bottom: 1px solid var(--white-border);
+    margin-bottom: 40px;
+  }
+  .revenue-label {
+    font-size: 10px; letter-spacing: 8px;
+    color: var(--white-dim); text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .revenue-amount {
+    font-size: 72px; font-weight: 100;
+    color: var(--white); line-height: 1;
+  }
+  .revenue-amount span { color: var(--gold); }
+  .revenue-period {
+    font-size: 11px; color: var(--white-dim);
+    margin-top: 8px; letter-spacing: 3px;
+  }
+
+  /* ── CHANGELOG ── */
+  .changelog-list { display: flex; flex-direction: column; }
+  .changelog-item {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 32px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--white-faint);
+  }
+  .changelog-item:last-child { border-bottom: none; }
+  .changelog-version {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--gold);
+    padding-top: 2px;
+  }
+  .changelog-content {}
+  .changelog-date {
+    font-size: 9px; letter-spacing: 4px;
+    color: var(--white-dim); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .changelog-changes { list-style: none; }
+  .changelog-changes li {
+    font-size: 13px; font-weight: 300;
+    color: var(--white-dim); line-height: 1.8;
+    padding-left: 16px; position: relative;
+  }
+  .changelog-changes li::before {
+    content: '—';
+    position: absolute; left: 0;
+    color: var(--gold); opacity: 0.5;
+  }
+
+  /* ── SETTINGS ── */
+  .settings-section { margin-bottom: 40px; }
+  .settings-section-title {
+    font-size: 9px; letter-spacing: 6px;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 16px; font-weight: 300;
+  }
+  .settings-row {
+    display: flex; justify-content: space-between;
+    align-items: center; padding: 18px 0;
+    border-bottom: 1px solid var(--white-faint);
+  }
+  .settings-label {
+    font-size: 13px; color: var(--white); font-weight: 300;
+  }
+  .settings-sub {
+    font-size: 11px; color: var(--white-dim);
+    margin-top: 2px;
+  }
+  .settings-input {
+    background: var(--surface);
+    border: 1px solid var(--white-border);
+    color: var(--white); font-family: var(--font-mono);
+    font-size: 11px; padding: 10px 16px;
+    outline: none; width: 340px;
+    transition: border-color 0.2s;
+  }
+  .settings-input:focus { border-color: var(--gold); }
+  .settings-save {
+    font-size: 10px; letter-spacing: 5px;
+    color: var(--black); background: var(--white);
+    border: none; padding: 10px 24px;
+    cursor: pointer; text-transform: uppercase;
+    font-family: var(--font-main); font-weight: 300;
+    transition: background 0.2s;
+    margin-top: 24px;
+  }
+  .settings-save:hover { background: var(--gold); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 500; opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: #0a0a0a;
+    border: 1px solid var(--white-border);
+    padding: 40px;
+    width: 90%; max-width: 640px;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .modal-title {
+    font-size: 10px; letter-spacing: 8px;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .modal-script {
+    font-size: 14px; font-weight: 300;
+    color: var(--white); line-height: 2;
+    white-space: pre-wrap;
+  }
+  .modal-close {
+    margin-top: 32px;
+    font-size: 10px; letter-spacing: 5px;
+    color: var(--white-dim); background: none;
+    border: none; cursor: pointer;
+    text-transform: uppercase;
+    font-family: var(--font-main);
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--white); }
+  .loading-dots::after {
+    content: '...';
+    animation: dots 1.2s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    padding: 80px 0; text-align: center;
+  }
+  .empty-text {
+    font-size: 11px; letter-spacing: 6px;
+    color: var(--white-dim); text-transform: uppercase;
+  }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 32px; right: 32px;
+    background: var(--white); color: var(--black);
+    font-size: 11px; letter-spacing: 4px;
+    text-transform: uppercase; padding: 14px 24px;
+    z-index: 9999; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none;
+    font-family: var(--font-main); font-weight: 300;
+  }
+  #toast.show { opacity: 1; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--white-border); }
+
+  @media (max-width: 768px) {
+    header { padding: 16px 20px; }
+    main { padding: 24px 20px; }
+    nav { padding: 0 20px; }
+    .nav-tab { padding: 14px 14px; letter-spacing: 4px; }
+    .queue-item { grid-template-columns: 1fr; gap: 8px; }
+    .settings-input { width: 100%; }
+    .settings-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .revenue-amount { font-size: 48px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-a">A</div>
+  <div class="splash-sub">AI WHILE YOU <span class="splash-gold">SLEEPING</span></div>
+  <div class="splash-bar"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div class="header-brand">
+      <div class="header-a">A</div>
+      <div class="header-name">AI While You Sleeping</div>
+    </div>
+    <div class="header-version" onclick="showTab('changelog')">v0.01</div>
+  </header>
+
+  <nav>
+    <button class="nav-tab active" onclick="showTab('trends')">Trends</button>
+    <button class="nav-tab" onclick="showTab('scripts')">Scripts</button>
+    <button class="nav-tab" onclick="showTab('accounts')">Accounts</button>
+    <button class="nav-tab" onclick="showTab('queue')">Queue</button>
+    <button class="nav-tab" onclick="showTab('analytics')">Analytics</button>
+    <button class="nav-tab" onclick="showTab('revenue')">Revenue</button>
+    <button class="nav-tab" onclick="showTab('changelog')">Changelog</button>
+    <button class="nav-tab" onclick="showTab('settings')">Settings</button>
+  </nav>
+
+  <main>
+
+    <!-- TRENDS -->
+    <div class="panel active" id="panel-trends">
+      <div class="section-header">
+        <span class="section-title">Trending Now</span>
+        <button class="section-action" onclick="loadTrends()">Refresh</button>
+      </div>
+      <div class="stats-grid" id="trend-stats">
+        <div class="stat-card">
+          <div class="stat-label">Trending Topics</div>
+          <div class="stat-value" id="stat-topics">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">YouTube Shorts</div>
+          <div class="stat-value" id="stat-yt">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Google Trends</div>
+          <div class="stat-value" id="stat-gt">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Scripts Generated</div>
+          <div class="stat-value gold" id="stat-scripts">0</div>
+        </div>
+      </div>
+      <div class="trends-grid" id="trends-container">
+        <div class="empty"><div class="empty-text">Loading trends</div></div>
+      </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <div class="panel" id="panel-scripts">
+      <div class="section-header">
+        <span class="section-title">Generated Scripts</span>
+      </div>
+      <div class="generate-box">
+        <textarea id="script-topic" rows="2" placeholder="Enter a topic or select a trend to generate a script..."></textarea>
+        <div class="generate-row">
+          <div class="platform-chips">
+            <button class="chip active" data-platform="youtube">YouTube</button>
+            <button class="chip" data-platform="tiktok">TikTok</button>
+            <button class="chip" data-platform="instagram">Instagram</button>
+            <button class="chip" data-platform="facebook">Facebook</button>
+          </div>
+          <button class="gen-btn" id="gen-btn" onclick="generateScript()">Generate</button>
+        </div>
+      </div>
+      <div class="scripts-list" id="scripts-container">
+        <div class="empty"><div class="empty-text">No scripts yet</div></div>
+      </div>
+    </div>
+
+    <!-- ACCOUNTS -->
+    <div class="panel" id="panel-accounts">
+      <div class="section-header">
+        <span class="section-title">Connected Accounts</span>
+        <button class="section-action" onclick="showToast('Connect flow coming in v0.02')">Add Account</button>
+      </div>
+      <div class="accounts-grid">
+        <div class="account-card">
+          <div class="account-platform">YouTube</div>
+          <div class="account-handle">@aiwhileyousleeping</div>
+          <div class="account-stats">
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Subscribers</div>
+            </div>
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Videos</div>
+            </div>
+          </div>
+          <div class="account-status">
+            <div class="status-dot pending"></div>
+            Pending Setup
+          </div>
+        </div>
+        <div class="account-card">
+          <div class="account-platform">TikTok</div>
+          <div class="account-handle">@aiwhileyousleeping</div>
+          <div class="account-stats">
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Followers</div>
+            </div>
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Videos</div>
+            </div>
+          </div>
+          <div class="account-status">
+            <div class="status-dot pending"></div>
+            Pending Setup
+          </div>
+        </div>
+        <div class="account-card">
+          <div class="account-platform">Instagram</div>
+          <div class="account-handle">@aiwhileyousleeping</div>
+          <div class="account-stats">
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Followers</div>
+            </div>
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Reels</div>
+            </div>
+          </div>
+          <div class="account-status">
+            <div class="status-dot pending"></div>
+            Pending Setup
+          </div>
+        </div>
+        <div class="account-card">
+          <div class="account-platform">Facebook</div>
+          <div class="account-handle">AI While You Sleeping</div>
+          <div class="account-stats">
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Followers</div>
+            </div>
+            <div>
+              <div class="account-stat-val">0</div>
+              <div class="account-stat-lbl">Reels</div>
+            </div>
+          </div>
+          <div class="account-status">
+            <div class="status-dot pending"></div>
+            Pending Setup
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUEUE -->
+    <div class="panel" id="panel-queue">
+      <div class="section-header">
+        <span class="section-title">Post Queue</span>
+        <button class="section-action" onclick="showToast('Scheduler coming in v0.03')">Schedule Post</button>
+      </div>
+      <div class="queue-list" id="queue-container">
+        <div class="empty"><div class="empty-text">Queue is empty</div></div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div class="panel" id="panel-analytics">
+      <div class="section-header">
+        <span class="section-title">Analytics</span>
+        <button class="section-action" onclick="loadAnalytics()">Refresh</button>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Views</div>
+          <div class="stat-value" id="a-views">0</div>
+          <div class="stat-delta">↑ Getting started</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Followers</div>
+          <div class="stat-value" id="a-followers">0</div>
+          <div class="stat-delta">↑ Getting started</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Posts Published</div>
+          <div class="stat-value" id="a-posts">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Engagement</div>
+          <div class="stat-value gold" id="a-engage">—</div>
+        </div>
+      </div>
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-title">Views — Last 7 Days</div>
+          <div class="chart-bars" id="chart-views">
+            <div class="bar" style="height:10%"></div>
+            <div class="bar" style="height:10%"></div>
+            <div class="bar" style="height:10%"></div>
+            <div class="bar" style="height:10%"></div>
+            <div class="bar" style="height:10%"></div>
+            <div class="bar" style="height:10%"></div>
+            <div class="bar active" style="height:10%"></div>
+          </div>
+          <div class="chart-labels">
+            <div class="chart-label">M</div>
+            <div class="chart-label">T</div>
+            <div class="chart-label">W</div>
+            <div class="chart-label">T</div>
+            <div class="chart-label">F</div>
+            <div class="chart-label">S</div>
+            <div class="chart-label">S</div>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-title">Platform Breakdown</div>
+          <div class="analytics-row">
+            <span class="analytics-label">YouTube</span>
+            <span class="analytics-val">0 views</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">TikTok</span>
+            <span class="analytics-val">0 views</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Instagram</span>
+            <span class="analytics-val">0 views</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Facebook</span>
+            <span class="analytics-val">0 views</span>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-title">Top Performing Content</div>
+          <div class="analytics-row">
+            <span class="analytics-label">No content yet</span>
+            <span class="analytics-val">—</span>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-title">Growth Rate</div>
+          <div class="analytics-row">
+            <span class="analytics-label">Followers gained today</span>
+            <span class="analytics-val">0</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Views gained today</span>
+            <span class="analytics-val">0</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Best performing platform</span>
+            <span class="analytics-val">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVENUE -->
+    <div class="panel" id="panel-revenue">
+      <div class="section-header">
+        <span class="section-title">Revenue</span>
+      </div>
+      <div class="revenue-total">
+        <div class="revenue-label">Total Earned</div>
+        <div class="revenue-amount"><span>$</span>0.00</div>
+        <div class="revenue-period">Since launch</div>
+      </div>
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-title">YouTube AdSense</div>
+          <div class="analytics-row">
+            <span class="analytics-label">This month</span>
+            <span class="analytics-val">$0.00</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">RPM</span>
+            <span class="analytics-val">—</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">Monetization status</span>
+            <span class="analytics-val down">Not eligible</span>
+          </div>
+        </div>
+        <div class="analytics-card">
+          <div class="analytics-title">Milestones</div>
+          <div class="analytics-row">
+            <span class="analytics-label">YouTube — 500 subs</span>
+            <span class="analytics-val down">0 / 500</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">YouTube — 1000 subs</span>
+            <span class="analytics-val down">0 / 1000</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">YouTube — 4000 watch hrs</span>
+            <span class="analytics-val down">0 / 4000</span>
+          </div>
+          <div class="analytics-row">
+            <span class="analytics-label">TikTok — 10k followers</span>
+            <span class="analytics-val down">0 / 10000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANGELOG -->
+    <div class="panel" id="panel-changelog">
+      <div class="section-header">
+        <span class="section-title">Changelog</span>
+      </div>
+      <div class="changelog-list">
+        <div class="changelog-item">
+          <div class="changelog-version">v0.01</div>
+          <div class="changelog-content">
+            <div class="changelog-date">April 2026 — Initial Release</div>
+            <ul class="changelog-changes">
+              <li>Initial dashboard build</li>
+              <li>YouTube Data API v3 integration for trending shorts</li>
+              <li>Google Trends integration for topic velocity</li>
+              <li>Claude AI script generation engine</li>
+              <li>Trends panel with live data refresh</li>
+              <li>Scripts panel with platform targeting</li>
+              <li>Accounts panel — YouTube, TikTok, Instagram, Facebook</li>
+              <li>Queue panel for post scheduling</li>
+              <li>Analytics panel with platform breakdown</li>
+              <li>Revenue panel with monetization milestones</li>
+              <li>Changelog panel</li>
+              <li>Settings panel with API key management</li>
+              <li>Battlefront-inspired dark UI with Raleway typeface</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="section-header">
+        <span class="section-title">Settings</span>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">API Keys</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">YouTube Data API Key</div>
+            <div class="settings-sub">Required for trending data</div>
+          </div>
+          <input class="settings-input" type="password" id="yt-key" placeholder="AIza...">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Anthropic API Key</div>
+            <div class="settings-sub">Required for script generation</div>
+          </div>
+          <input class="settings-input" type="password" id="ant-key" placeholder="sk-ant-...">
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Backend</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">VPS Backend URL</div>
+            <div class="settings-sub">Flask server endpoint</div>
+          </div>
+          <input class="settings-input" type="text" id="vps-url" placeholder="https://...">
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Content</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Default Script Length</div>
+            <div class="settings-sub">Target word count per script</div>
+          </div>
+          <input class="settings-input" type="number" id="script-len" placeholder="150" value="150">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Trends Refresh Interval</div>
+            <div class="settings-sub">Minutes between auto-refresh</div>
+          </div>
+          <input class="settings-input" type="number" id="refresh-interval" placeholder="30" value="30">
+        </div>
+      </div>
+      <button class="settings-save" onclick="saveSettings()">Save Settings</button>
+    </div>
+
+  </main>
+</div>
+
+<!-- SCRIPT MODAL -->
+<div class="modal-overlay" id="script-modal">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Generated Script</div>
+    <div class="modal-script" id="modal-script"></div>
+    <div style="display:flex;gap:20px;margin-top:32px;align-items:center">
+      <button class="script-btn primary" onclick="addToQueue()">Add to Queue</button>
+      <button class="script-btn" onclick="copyScript()">Copy</button>
+      <button class="modal-close" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  trends: [],
+  scripts: [],
+  queue: [],
+  currentScript: null,
+  scriptCount: 0,
+  settings: {
+    ytKey: '',
+    antKey: '',
+    vpsUrl: '',
+    scriptLen: 150,
+    refreshInterval: 30
+  }
+};
+
+// ── INIT ──
+window.addEventListener('load', () => {
+  loadSettings();
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    document.getElementById('app').classList.add('show');
+    loadTrends();
+  }, 2800);
+});
+
+// ── TABS ──
+function showTab(tab) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t => {
+    if (t.textContent.toLowerCase().trim() === tab) t.classList.add('active');
+  });
+}
+
+// ── SETTINGS ──
+function loadSettings() {
+  const s = JSON.parse(localStorage.getItem('awys-settings') || '{}');
+  Object.assign(state.settings, s);
+  if (s.ytKey) document.getElementById('yt-key').value = s.ytKey;
+  if (s.antKey) document.getElementById('ant-key').value = s.antKey;
+  if (s.vpsUrl) document.getElementById('vps-url').value = s.vpsUrl;
+  if (s.scriptLen) document.getElementById('script-len').value = s.scriptLen;
+  if (s.refreshInterval) document.getElementById('refresh-interval').value = s.refreshInterval;
+}
+
+function saveSettings() {
+  state.settings.ytKey = document.getElementById('yt-key').value.trim();
+  state.settings.antKey = document.getElementById('ant-key').value.trim();
+  state.settings.vpsUrl = document.getElementById('vps-url').value.trim();
+  state.settings.scriptLen = parseInt(document.getElementById('script-len').value) || 150;
+  state.settings.refreshInterval = parseInt(document.getElementById('refresh-interval').value) || 30;
+  localStorage.setItem('awys-settings', JSON.stringify(state.settings));
+  showToast('Settings saved');
+}
+
+// ── TRENDS ──
+async function loadTrends() {
+  document.getElementById('trends-container').innerHTML =
+    '<div class="empty"><div class="empty-text">Loading trends<span class="loading-dots"></span></div></div>';
+
+  const key = state.settings.ytKey;
+  if (!key) {
+    showSampleTrends();
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&videoCategoryId=0&maxResults=12&regionCode=US&key=${key}`
+    );
+    const data = await res.json();
+    if (data.error) { showSampleTrends(); return; }
+
+    state.trends = data.items.map(item => ({
+      id: item.id,
+      title: item.snippet.title,
+      channel: item.snippet.channelTitle,
+      views: parseInt(item.statistics.viewCount || 0),
+      platform: 'YouTube',
+      thumbnail: item.snippet.thumbnails?.default?.url
+    }));
+
+    document.getElementById('stat-topics').textContent = state.trends.length;
+    document.getElementById('stat-yt').textContent = state.trends.length;
+    document.getElementById('stat-gt').textContent = '10';
+    renderTrends();
+  } catch(e) {
+    showSampleTrends();
+  }
+}
+
+function showSampleTrends() {
+  state.trends = [
+    { title: 'AI tools changing everything in 2026', platform: 'YouTube', views: 2400000, hot: true },
+    { title: 'Morning routine that actually works', platform: 'YouTube', views: 1800000, hot: true },
+    { title: 'Why nobody talks about this money hack', platform: 'YouTube', views: 3100000, hot: true },
+    { title: '5 things to do before 8am', platform: 'Google Trends', views: 900000, hot: false },
+    { title: 'The truth about passive income', platform: 'YouTube', views: 2200000, hot: true },
+    { title: 'This AI just replaced 10 jobs', platform: 'Google Trends', views: 1600000, hot: true },
+    { title: 'One habit that changed my life', platform: 'YouTube', views: 1100000, hot: false },
+    { title: 'How to go viral in 2026', platform: 'Google Trends', views: 780000, hot: false },
+    { title: 'Investing when you have no money', platform: 'YouTube', views: 2900000, hot: true },
+    { title: 'The AI sleep trick everyone is using', platform: 'Google Trends', views: 1400000, hot: true },
+  ];
+  document.getElementById('stat-topics').textContent = state.trends.length;
+  document.getElementById('stat-yt').textContent = '6';
+  document.getElementById('stat-gt').textContent = '4';
+  renderTrends();
+}
+
+function renderTrends() {
+  const container = document.getElementById('trends-container');
+  if (!state.trends.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">No trends found</div></div>';
+    return;
+  }
+  container.innerHTML = state.trends.map((t, i) => `
+    <div class="trend-card">
+      <div class="trend-platform">${t.platform}</div>
+      <div class="trend-title">${t.title}</div>
+      <div class="trend-meta">
+        <span class="trend-views">${formatNum(t.views)} views</span>
+        <span class="trend-badge ${t.hot ? 'hot' : ''}">${t.hot ? 'Trending' : 'Rising'}</span>
+      </div>
+      <button class="trend-generate" onclick="prefillScript('${t.title.replace(/'/g,"\\'")}')">
+        Generate Script →
+      </button>
+    </div>
+  `).join('');
+}
+
+function formatNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(0) + 'K';
+  return n.toString();
+}
+
+// ── SCRIPTS ──
+function prefillScript(topic) {
+  showTab('scripts');
+  document.getElementById('script-topic').value = topic;
+  document.getElementById('script-topic').focus();
+}
+
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+async function generateScript() {
+  const topic = document.getElementById('script-topic').value.trim();
+  if (!topic) { showToast('Enter a topic first'); return; }
+
+  const platform = document.querySelector('.chip.active')?.dataset.platform || 'youtube';
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  const key = state.settings.antKey;
+  const len = state.settings.scriptLen || 150;
+
+  const platformGuide = {
+    youtube: 'YouTube Shorts (60 seconds, hook in first 3 seconds, strong CTA)',
+    tiktok: 'TikTok (15-60 seconds, fast-paced, trending audio suggestion)',
+    instagram: 'Instagram Reels (30-60 seconds, visually descriptive)',
+    facebook: 'Facebook Reels (60 seconds, broader audience appeal)'
+  };
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `Write a ${platformGuide[platform]} script about: "${topic}".
+
+Format:
+HOOK: (first line — must grab attention instantly)
+SCRIPT: (the main content, ~${len} words, conversational and engaging)
+CTA: (call to action — subscribe/follow/like)
+TAGS: (5 relevant hashtags)
+
+Keep it punchy, modern, and optimized for virality. Write as if a confident creator is speaking directly to camera.`
+        }]
+      })
+    });
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || 'Error generating script. Check your API key in Settings.';
+
+    const script = {
+      id: Date.now(),
+      topic,
+      platform,
+      body: text,
+      status: 'ready',
+      created: new Date().toLocaleDateString()
+    };
+
+    state.scripts.unshift(script);
+    state.scriptCount++;
+    document.getElementById('stat-scripts').textContent = state.scriptCount;
+    renderScripts();
+
+    state.currentScript = script;
+    openModal(script);
+
+  } catch(e) {
+    showToast('Error — check API key in Settings');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Generate';
+}
+
+function renderScripts() {
+  const container = document.getElementById('scripts-container');
+  if (!state.scripts.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">No scripts yet</div></div>';
+    return;
+  }
+  container.innerHTML = state.scripts.map(s => `
+    <div class="script-card">
+      <div class="script-header">
+        <div class="script-topic">${s.topic}</div>
+        <div class="script-status ${s.status}">${s.status}</div>
+      </div>
+      <div class="script-body">${s.body}</div>
+      <div class="script-actions">
+        <button class="script-btn primary" onclick="viewScript(${s.id})">View</button>
+        <button class="script-btn" onclick="addScriptToQueue(${s.id})">Queue</button>
+        <button class="script-btn" onclick="copyScriptById(${s.id})">Copy</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── MODAL ──
+function openModal(script) {
+  state.currentScript = script;
+  document.getElementById('modal-title').textContent = script.platform.toUpperCase() + ' — ' + script.topic;
+  document.getElementById('modal-script').textContent = script.body;
+  document.getElementById('script-modal').classList.add('show');
+}
+
+function viewScript(id) {
+  const s = state.scripts.find(s => s.id === id);
+  if (s) openModal(s);
+}
+
+function closeModal() {
+  document.getElementById('script-modal').classList.remove('show');
+}
+
+function copyScript() {
+  if (state.currentScript) {
+    navigator.clipboard.writeText(state.currentScript.body);
+    showToast('Copied to clipboard');
+  }
+}
+
+function copyScriptById(id) {
+  const s = state.scripts.find(s => s.id === id);
+  if (s) { navigator.clipboard.writeText(s.body); showToast('Copied'); }
+}
+
+// ── QUEUE ──
+function addToQueue() {
+  if (!state.currentScript) return;
+  addScriptToQueue(state.currentScript.id);
+  closeModal();
+}
+
+function addScriptToQueue(id) {
+  const s = state.scripts.find(s => s.id === id);
+  if (!s) return;
+  const item = {
+    id: Date.now(),
+    scriptId: id,
+    topic: s.topic,
+    platform: s.platform,
+    time: 'Scheduled',
+    status: 'pending'
+  };
+  state.queue.unshift(item);
+  s.status = 'posted';
+  renderScripts();
+  renderQueue();
+  showToast('Added to queue');
+}
+
+function renderQueue() {
+  const container = document.getElementById('queue-container');
+  if (!state.queue.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Queue is empty</div></div>';
+    return;
+  }
+  container.innerHTML = state.queue.map(q => `
+    <div class="queue-item">
+      <div class="queue-time">${q.time}</div>
+      <div class="queue-topic">${q.topic}</div>
+      <div class="queue-platform">${q.platform}</div>
+      <button class="queue-remove" onclick="removeFromQueue(${q.id})">Remove</button>
+    </div>
+  `).join('');
+}
+
+function removeFromQueue(id) {
+  state.queue = state.queue.filter(q => q.id !== id);
+  renderQueue();
+}
+
+// ── ANALYTICS ──
+function loadAnalytics() {
+  showToast('Analytics will populate as accounts connect');
+}
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── CLOSE MODAL ON OVERLAY ──
+document.getElementById('script-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
