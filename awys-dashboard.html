@@ -1533,11 +1533,18 @@
           <div class="checklist-item" id="check-3">
             <div class="check-num" id="check-num-3">3</div>
             <div class="check-body">
-              <div class="check-title">Transfer video to server</div>
-              <div class="check-sub">Open Terminal on your Mac and run the command below — replace YOUR_VIDEO.mp4 with your actual filename</div>
-              <div style="background:rgba(0,0,0,0.4);padding:12px 16px;font-family:monospace;font-size:11px;color:var(--gold);margin-top:10px;border:1px solid rgba(240,160,32,0.15)" id="scp-cmd-display">scp ~/Downloads/YOUR_VIDEO.mp4 root@187.124.240.101:/root/awys/video.mp4</div>
-              <input class="settings-input" placeholder="Type your video filename here to update the command above..." style="width:100%;margin-top:8px" oninput="updateScpCommand(this.value)">
-              <button class="script-btn" style="margin-top:8px" onclick="markStep3Done()">✓ Done — video transferred</button>
+              <div class="check-title">Upload video to server</div>
+              <div class="check-sub">Select your downloaded InVideo MP4 — it uploads directly to the server, no terminal needed</div>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <label style="cursor:pointer">
+                  <input type="file" id="video-file-input" accept="video/mp4,video/*" style="display:none" onchange="uploadVideoFile(this)">
+                  <div class="gen-btn" style="display:inline-block;padding:10px 20px;font-size:10px">Select Video File</div>
+                </label>
+                <div id="upload-file-status" style="font-size:11px;color:var(--white-dim)">No file selected</div>
+              </div>
+              <div class="progress-bar-wrap" id="file-upload-progress" style="display:none;margin-top:12px">
+                <div class="progress-bar-fill" id="file-upload-fill" style="width:0%"></div>
+              </div>
             </div>
             <div class="check-badge" id="check-badge-3">TODO</div>
           </div>
@@ -2815,6 +2822,54 @@ function setCheckActive(n) {
   if (badge) { badge.textContent = 'DO THIS'; badge.classList.add('active'); }
 }
 
+
+async function uploadVideoFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
+  
+  const statusEl = document.getElementById('upload-file-status');
+  const progressWrap = document.getElementById('file-upload-progress');
+  const progressFill = document.getElementById('file-upload-fill');
+  
+  if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '...';
+  if (progressWrap) progressWrap.style.display = 'block';
+  if (progressFill) progressFill.style.width = '10%';
+
+  try {
+    const formData = new FormData();
+    formData.append('video', file, 'video.mp4');
+
+    // Use XMLHttpRequest for upload progress
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && progressFill) {
+          progressFill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error('Upload failed: ' + xhr.status));
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.open('POST', vpsUrl + '/video/upload-file');
+      xhr.send(formData);
+    });
+
+    if (progressFill) progressFill.style.width = '100%';
+    if (statusEl) { statusEl.textContent = '✓ ' + file.name + ' uploaded successfully'; statusEl.style.color = 'var(--success)'; }
+    markStep3Done();
+    showToast('Video uploaded to server!');
+
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = 'Upload failed: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+    showToast('Upload failed: ' + e.message);
+  }
+}
+
 function updateScpCommand(filename) {
   const cmd = document.getElementById('scp-cmd-display');
   if (!cmd) return;
@@ -2826,6 +2881,54 @@ function updateScpCommand(filename) {
 }
 
 // ── INVIDEO UPLOAD WORKFLOW ──
+
+async function uploadVideoFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
+  
+  const statusEl = document.getElementById('upload-file-status');
+  const progressWrap = document.getElementById('file-upload-progress');
+  const progressFill = document.getElementById('file-upload-fill');
+  
+  if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '...';
+  if (progressWrap) progressWrap.style.display = 'block';
+  if (progressFill) progressFill.style.width = '10%';
+
+  try {
+    const formData = new FormData();
+    formData.append('video', file, 'video.mp4');
+
+    // Use XMLHttpRequest for upload progress
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && progressFill) {
+          progressFill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error('Upload failed: ' + xhr.status));
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.open('POST', vpsUrl + '/video/upload-file');
+      xhr.send(formData);
+    });
+
+    if (progressFill) progressFill.style.width = '100%';
+    if (statusEl) { statusEl.textContent = '✓ ' + file.name + ' uploaded successfully'; statusEl.style.color = 'var(--success)'; }
+    markStep3Done();
+    showToast('Video uploaded to server!');
+
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = 'Upload failed: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+    showToast('Upload failed: ' + e.message);
+  }
+}
+
 function updateScpCommand(filename) {
   const cmd = document.getElementById('scp-command');
   if (!cmd) return;
