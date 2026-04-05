@@ -895,7 +895,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button onclick="deployToGitHub()" id="deploy-btn" style="font-size:9px;letter-spacing:3px;background:transparent;border:1px solid rgba(240,160,32,0.3);color:var(--gold);padding:5px 12px;cursor:pointer;font-family:var(--font-main)">DEPLOY</button>
-      <div class="header-version" onclick="showTab('changelog')">v0.24</div>
+      <div class="header-version" onclick="showTab('changelog')">v0.25</div>
     </div>
   </header>
 
@@ -1274,7 +1274,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.24</div>
+          <div class="changelog-version">v0.25</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 3:48 PM MTC</div>
             <ul class="changelog-changes">
@@ -1296,7 +1296,7 @@
         </div>
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.24</div>
+          <div class="changelog-version">v0.25</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 1:30 PM MTC</div>
             <ul class="changelog-changes">
@@ -1889,6 +1889,10 @@ function showTab(tab) {
     if (onclick.includes("'" + tab + "'")) t.classList.add('active');
   });
   if (tab === 'trends') { renderTrends(); renderScripts(); }
+  if (tab === 'queue') { renderManualQueue(); renderWeeklyQueue(); renderCountdowns(); if (!window._countdownInterval) { window._countdownInterval = setInterval(updateCountdowns, 1000); } }
+  if (tab === 'video') { loadSchedulerStatus(); }
+  if (tab === 'analytics') { loadAnalytics(); }
+  if (tab === 'system') { initSystemTab(); }
   if (tab === 'queue') { renderManualQueue(); renderWeeklyQueue(); }
   if (tab === 'video') { loadSchedulerStatus(); }
   if (tab === 'analytics') { loadAnalytics(); }
@@ -2475,7 +2479,9 @@ function updateCountdowns() {
 // Start countdown ticker
 function initCountdowns() {
   renderCountdowns();
-  setInterval(updateCountdowns, 1000);
+  if (!window._countdownInterval) {
+    window._countdownInterval = setInterval(updateCountdowns, 1000);
+  }
 }
 
 // ── QUEUE SYSTEM ──
