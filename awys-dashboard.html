@@ -2021,6 +2021,29 @@ function renderTrends() {
     '</div>').join('') + '</div>';
 }
 
+
+function renderScripts() {
+  const container = document.getElementById('scripts-container');
+  if (!container) return;
+  if (!state.scripts.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Generated scripts will appear here</div></div>';
+    return;
+  }
+  container.innerHTML = state.scripts.map((s, i) =>
+    '<div class="script-card">' +
+    '<div class="script-header">' +
+    '<div><div class="script-topic">' + s.topic + '</div>' +
+    '<div class="script-meta">' + s.platform + ' · ' + new Date(s.generated_at).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) + '</div></div>' +
+    '</div>' +
+    '<div class="script-preview">' + s.script.substring(0, 150) + '...</div>' +
+    '<div class="script-actions">' +
+    '<button class="script-btn" onclick="viewScript(' + i + ')">View</button>' +
+    '<button class="script-btn" style="color:var(--gold);border-color:rgba(240,160,32,0.4)" onclick="copyScriptForInVideo(' + i + ')">Copy for InVideo</button>' +
+    '<button class="script-btn" onclick="addScriptToQueue(' + i + ')">Add to Queue</button>' +
+    '</div></div>'
+  ).join('');
+}
+
 function useTrend(i) {
   const trend = state.trends[i];
   if (!trend) return;
