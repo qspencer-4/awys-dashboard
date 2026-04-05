@@ -2162,16 +2162,20 @@ async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
       if (data.status === 'stitching') {
         setStepStatus('video', 'done', 'All clips ready');
         setStepStatus('stitch', 'running', 'Stitching...');
+        setStepStatus('upload', 'waiting', 'Waiting');
         setProgress(85);
-        setVideoMsg('Stitching clips together...');
+        setVideoMsg('Stitching clips together with FFmpeg...');
       }
 
       if (data.status === 'complete' && data.output_url) {
         clearInterval(interval);
         setProgress(100);
+        setStepStatus('video', 'done', 'All clips done');
         setStepStatus('stitch', 'done', 'Complete');
         setVideoMsg('Video ready!');
-        showVideoPreview(data.output_url);
+        // Use the VPS tunnel URL to serve the video directly
+        const previewUrl = vpsUrl + '/video/latest?t=' + Date.now();
+        showVideoPreview(previewUrl);
         showVideoActions();
         resetVideoBtn();
       }
