@@ -2533,32 +2533,126 @@ function renderManualQueue() {
   const container = document.getElementById('manual-queue-list');
   if (!container) return;
   const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  
+
   if (queue.length === 0) {
     container.innerHTML = '<div class="empty"><div class="empty-text">No videos ready yet — generate a script, create in InVideo, then click Add to Queue</div></div>';
     return;
   }
-  
+
+  const platformColors = { youtube: '#FF0000', tiktok: '#00f2ea', instagram: '#E1306C', facebook: '#1877F2' };
+  const platformIcons = { youtube: '▶', tiktok: '♪', instagram: '◈', facebook: 'f' };
+
   container.innerHTML = queue.map((item, idx) => `
-    <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);padding:20px;margin-bottom:1px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div style="flex:1">
+    <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);margin-bottom:2px">
+
+      <!-- Header -->
+      <div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div>
           <div style="font-size:14px;margin-bottom:4px">${item.title}</div>
           <div style="font-size:10px;color:var(--white-dim)">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path}</div>
         </div>
-        <div style="display:flex;gap:8px;margin-left:16px">
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="postQueueItem(${idx})">Post Now</button>
+        <div style="display:flex;gap:8px">
+          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="generatePlatformCaptions(${idx})">✦ Generate Captions</button>
+          <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:transparent;border:1px solid rgba(240,160,32,0.3)" onclick="postQueueItem(${idx})">Post YouTube</button>
           <button class="script-btn" style="padding:8px 12px;font-size:10px" onclick="removeQueueItem(${idx})">Remove</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${['youtube','tiktok','instagram','facebook'].map(p => `
-          <div style="background:rgba(240,160,32,0.08);border:1px solid rgba(240,160,32,0.2);padding:6px 12px;font-size:9px;letter-spacing:2px;color:var(--gold)">${p.toUpperCase()}</div>
-        `).join('')}
+
+      <!-- Platform Cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px">
+        ${['youtube','tiktok','instagram','facebook'].map(p => {
+          const captions = item.captions && item.captions[p];
+          return `<div style="padding:16px;background:rgba(20,10,40,0.4)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${platformColors[p]}"></div>
+              <div style="font-size:9px;letter-spacing:3px;color:var(--white-dim)">${p.toUpperCase()}</div>
+            </div>
+            ${captions ? `
+              <div style="font-size:11px;line-height:1.6;margin-bottom:8px;color:var(--white)">${captions.caption.substring(0,100)}...</div>
+              <div style="font-size:10px;color:var(--gold);margin-bottom:10px">${captions.tags.slice(0,3).join(' ')}</div>
+              <button class="script-btn" style="font-size:9px;padding:4px 10px;width:100%" onclick="copyCaptionForPlatform(${idx},'${p}')">Copy Caption</button>
+            ` : `
+              <div style="font-size:11px;color:var(--white-dim);line-height:1.6">Click Generate Captions to create platform-optimized caption and tags</div>
+            `}
+          </div>`;
+        }).join('')}
       </div>
+
+      <!-- Status -->
+      ${item.status === 'posted' ? `<div style="padding:12px 24px;font-size:10px;color:var(--success);letter-spacing:2px">✓ POSTED TO YOUTUBE${item.url ? ' · ' + item.url : ''}</div>` : ''}
     </div>
   `).join('');
 }
+
+async function generatePlatformCaptions(idx) {
+  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+  const item = queue[idx];
+  if (!item) return;
+
+  const antKey = state.settings.antKey;
+  const vpsUrl = state.settings.vpsUrl;
+  if (!antKey || !vpsUrl) { showToast('Add API keys in Settings'); return; }
+
+  showToast('Generating captions for all 4 platforms...');
+
+  try {
+    const res = await fetch(vpsUrl + '/generate-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: 'Generate 4 platform-specific captions for this video: ' + item.title + '. Script: ' + (item.script || item.description || item.title),
+        platform: 'all',
+        key: antKey,
+        length: 200,
+        caption_mode: true
+      })
+    });
+    const data = await res.json();
+
+    // Parse captions from response
+    const script = data.script || '';
+    
+    queue[idx].captions = {
+      youtube: {
+        caption: extractSection(script, "YOUTUBE") || item.title + " | AI While You Sleeping. Watch to discover this AI tool that could change your workflow. Follow for daily AI reviews.",
+        tags: ["AItools", "shorts", "ChatGPT", "AI2026", "productivity", "tech", "artificialintelligence", "aiwhileyousleeping"]
+      },
+      tiktok: {
+        caption: extractSection(script, "TIKTOK") || "POV: You just found the AI tool everyone will be using in 2026",
+        tags: ["#AItools", "#fyp", "#foryou", "#ChatGPT", "#techtok", "#AIhacks", "#learnontiktok", "#AI2026"]
+      },
+      instagram: {
+        caption: extractSection(script, "INSTAGRAM") || "This AI tool just changed everything. Save this for later! Follow @aiwhileyousleeping for daily AI reviews",
+        tags: ["#AItools", "#artificialintelligence", "#techreview", "#productivityhacks", "#ChatGPT", "#AIreview", "#reels", "#instareels", "#AI2026", "#aiwhileyousleeping"]
+      },
+      facebook: {
+        caption: extractSection(script, "FACEBOOK") || "I tested this AI tool so you do not have to. Follow AI While You Sleeping for daily AI tool reviews that actually matter.",
+        tags: ["AItools", "technology", "ChatGPT", "productivity", "AI2026"]
+      }
+    };
+    localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
+    renderManualQueue();
+    showToast('Captions generated for all 4 platforms!');
+  } catch(e) {
+    showToast('Could not generate captions: ' + e.message);
+  }
+}
+
+function extractSection(text, platform) {
+  const regex = new RegExp(platform + '[:\s]+([\s\S]+?)(?=YOUTUBE|TIKTOK|INSTAGRAM|FACEBOOK|$)', 'i');
+  const match = text.match(regex);
+  return match ? match[1].trim().substring(0, 300) : null;
+}
+
+function copyCaptionForPlatform(idx, platform) {
+  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+  const item = queue[idx];
+  if (!item || !item.captions || !item.captions[platform]) return;
+  const c = item.captions[platform];
+  const text = c.caption + '\n\n' + c.tags.join(' ');
+  navigator.clipboard.writeText(text).then(() => showToast(platform.toUpperCase() + ' caption copied!'));
+}
+
 
 async function postQueueItem(idx) {
   const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
