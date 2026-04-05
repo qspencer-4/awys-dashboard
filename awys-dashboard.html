@@ -1,6 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en" data-expander-initialized="true"><head><style>body {transition: opacity ease-in 0.2s; } 
+body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
+</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AWYS — AI While You Sleeping</title>
@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
 <style>
   :root {
     --black: #0e0c1a;
@@ -873,20 +873,20 @@
   .health-fix:hover { background: rgba(107,175,138,0.1); }
 </style>
 </head>
-<body>
+<body data-new-gr-c-s-check-loaded="14.1280.0" data-gr-ext-installed="">
 
 <!-- SPLASH -->
-<div id="splash">
+<div id="splash" class="hide">
   <div class="splash-a">A</div>
   <div class="splash-sub">AI WHILE YOU <span class="splash-gold">SLEEPING</span></div>
   <div class="splash-bar"></div>
 </div>
 
 <!-- TOAST -->
-<div id="toast"></div>
+<div id="toast" class="">YouTube quota exceeded — resets midnight Pacific</div>
 
 <!-- APP -->
-<div id="app">
+<div id="app" class="show">
   <header>
     <div class="header-brand">
       <div id="health-dot" title="System Health" style="width:8px;height:8px;border-radius:50%;background:#6BAF8A;margin-right:8px;cursor:pointer;flex-shrink:0;transition:background 0.3s" onclick="showHealthReport()"></div>
@@ -894,13 +894,13 @@
       <div class="header-name">AI While You Sleeping</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="deployToGitHub()" id="deploy-btn" style="font-size:9px;letter-spacing:3px;background:transparent;border:1px solid rgba(240,160,32,0.3);color:var(--gold);padding:5px 12px;cursor:pointer;font-family:var(--font-main)">DEPLOY</button>
+      <button onclick="deployToGitHub()" id="deploy-btn" style="font-size:9px;letter-spacing:3px;background:transparent;border:1px solid rgba(240,160,32,0.3);color:var(--gold);padding:5px 12px;cursor:pointer;font-family:var(--font-main)" disabled="">DEPLOYING...</button>
       <div class="header-version" onclick="showTab('changelog')">v0.24</div>
     </div>
   </header>
 
   <nav>
-    <button class="nav-tab active" onclick="showTab('trends')">Trends & Scripts</button>
+    <button class="nav-tab active" onclick="showTab('trends')">Trends &amp; Scripts</button>
     <button class="nav-tab" onclick="showTab('accounts')">Accounts</button>
     <button class="nav-tab" onclick="showTab('queue')">Queue</button>
     <button class="nav-tab" onclick="showTab('video')">Video</button>
@@ -915,9 +915,9 @@
   <main>
 
     <!-- TRENDS -->
-    <div class="panel" id="panel-trends">
+    <div class="panel active" id="panel-trends">
       <div class="section-header">
-        <span class="section-title">Trends & Scripts</span>
+        <span class="section-title">Trends &amp; Scripts</span>
         <button class="section-action" onclick="loadTrends()">Refresh Trends</button>
       </div>
 
@@ -925,15 +925,15 @@
       <div class="stats-grid" style="margin-bottom:32px">
         <div class="stat-card">
           <div class="stat-label">Trending Topics</div>
-          <div class="stat-value" id="stat-topics">0</div>
+          <div class="stat-value" id="stat-topics">12</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">YouTube Shorts</div>
-          <div class="stat-value" id="stat-yt">0</div>
+          <div class="stat-value" id="stat-yt">6</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Google Trends</div>
-          <div class="stat-value" id="stat-gt">10</div>
+          <div class="stat-value" id="stat-gt">6</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Scripts Generated</div>
@@ -943,9 +943,7 @@
 
       <!-- TRENDING NOW -->
       <div style="font-size:9px;letter-spacing:6px;color:var(--gold);margin-bottom:16px">TRENDING NOW</div>
-      <div id="trends-container" style="margin-bottom:40px">
-        <div class="empty"><div class="empty-text">Hit Refresh Trends to load<span class="loading-dots"></span></div></div>
-      </div>
+      <div id="trends-container" style="margin-bottom:40px"><div class="trends-grid"><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">I tested every AI writing tool — honest results</div><div class="trend-meta">2.4M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(0)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">This AI tool saved me 10 hours this week</div><div class="trend-meta">1.8M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(1)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">ChatGPT vs Claude — which is actually better in 2026</div><div class="trend-meta">3.1M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(2)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">Google Trends</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">5 AI tools that pay for themselves</div><div class="trend-meta">900K views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(3)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">The AI tool nobody is talking about</div><div class="trend-meta">2.2M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(4)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">Google Trends</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">I used AI to run my entire business for a week</div><div class="trend-meta">1.6M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(5)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span></div><div class="trend-title">Best free AI tools in 2026</div><div class="trend-meta">1.1M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(6)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">Google Trends</span></div><div class="trend-title">How to make money with AI tools</div><div class="trend-meta">780K views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(7)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">This AI writes better than me — full review</div><div class="trend-meta">2.9M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(8)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">Google Trends</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">AI tools for content creators — full breakdown</div><div class="trend-meta">1.4M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(9)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">YouTube</span><span class="trend-badge hot">HOT</span></div><div class="trend-title">Midjourney vs DALL-E vs Stable Diffusion 2026</div><div class="trend-meta">1.9M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(10)">Use This →</button></div></div><div class="trend-card"><div class="trend-header"><span class="trend-platform">Google Trends</span></div><div class="trend-title">I automated my entire workflow with AI</div><div class="trend-meta">1.2M views</div><div class="trend-actions"><button class="trend-btn" onclick="useTrend(11)">Use This →</button></div></div></div></div>
 
       <!-- GENERATE SCRIPT -->
       <div class="generate-box">
@@ -968,7 +966,7 @@
             <label style="font-size:10px;letter-spacing:3px;color:var(--white-dim);display:block;margin-bottom:8px">LENGTH</label>
             <select class="video-select" id="script-length">
               <option value="100">Short — 30 sec</option>
-              <option value="150" selected>Standard — 45 sec</option>
+              <option value="150" selected="">Standard — 45 sec</option>
               <option value="200">Long — 60 sec</option>
             </select>
           </div>
@@ -1119,7 +1117,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-label">Last Synced</div>
-          <div class="stat-value gold" id="a-synced" style="font-size:14px">—</div>
+          <div class="stat-value gold" id="a-synced" style="font-size:14px">12:17 AM</div>
         </div>
       </div>
       <div class="analytics-grid">
@@ -1134,7 +1132,7 @@
             <div class="bar" style="height:5%"></div>
             <div class="bar active" style="height:5%"></div>
           </div>
-          <div class="chart-labels" id="chart-labels"></div>
+          <div class="chart-labels" id="chart-labels"><div class="chart-label">M</div><div class="chart-label">T</div><div class="chart-label">W</div><div class="chart-label">T</div><div class="chart-label">F</div><div class="chart-label">S</div><div class="chart-label">S</div></div>
         </div>
         <div class="analytics-card">
           <div class="analytics-title">Platform Breakdown</div>
@@ -1546,7 +1544,7 @@
           <div class="checklist-item" id="check-4">
             <div class="check-num" id="check-num-4">4</div>
             <div class="check-body">
-              <div class="check-title">Review & post</div>
+              <div class="check-title">Review &amp; post</div>
               <div class="check-sub">Title, description and tags are auto-filled from your script. Review them below then click Add to Queue or Upload Now.</div>
             </div>
             <div class="check-badge" id="check-badge-4">TODO</div>
@@ -1628,9 +1626,7 @@
       <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px;margin-bottom:24px">
         <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:12px">TRANSFER VIDEO TO VPS</div>
         <div style="font-size:11px;color:var(--white-dim);margin-bottom:12px">Run this command on your Mac to transfer your downloaded InVideo video to the VPS:</div>
-        <div style="background:rgba(0,0,0,0.4);padding:16px;font-family:monospace;font-size:12px;color:var(--gold);border:1px solid rgba(240,160,32,0.15);word-break:break-all" id="scp-command">
-          scp ~/Downloads/YOUR_VIDEO.mp4 root@187.124.240.101:/root/awys/video.mp4
-        </div>
+        <div style="background:rgba(0,0,0,0.4);padding:16px;font-family:monospace;font-size:12px;color:var(--gold);border:1px solid rgba(240,160,32,0.15);word-break:break-all" id="scp-command">scp ~/Downloads/https://course-watches-learners-checking.trycloudflare.com root@187.124.240.101:/root/awys/video.mp4</div>
         <div style="margin-top:12px">
           <input id="scp-filename" class="settings-input" placeholder="Enter your video filename from Downloads..." oninput="updateScpCommand(this.value)" style="width:100%">
         </div>
@@ -1666,7 +1662,7 @@
 
         <!-- BACKEND & APIs -->
         <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px">
-          <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px">BACKEND & APIs</div>
+          <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px">BACKEND &amp; APIs</div>
           <div id="checks-backend"></div>
         </div>
 
@@ -1785,7 +1781,7 @@
           </div>
           <select class="settings-input" id="script-time" style="width:auto">
             <option value="08:00">8:00 AM</option>
-            <option value="09:00" selected>9:00 AM</option>
+            <option value="09:00" selected="">9:00 AM</option>
             <option value="10:00">10:00 AM</option>
             <option value="11:00">11:00 AM</option>
           </select>
@@ -1797,7 +1793,7 @@
           </div>
           <select class="settings-input" id="yt-post-time" style="width:auto">
             <option value="11:00">11:00 AM</option>
-            <option value="12:00" selected>12:00 PM</option>
+            <option value="12:00" selected="">12:00 PM</option>
             <option value="13:00">1:00 PM</option>
             <option value="19:00">7:00 PM</option>
             <option value="20:00">8:00 PM</option>
@@ -3713,15 +3709,8 @@ window.addEventListener('beforeinstallprompt', e => {
       </div>
     </div>
   </div>
-</body>
-</htmlfunction renderScripts() {
-  const container = document.getElementById('scripts-container');
-  if (!container) return;
-  if (!state.scripts.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-text">Generated scripts will appear here</div></div>';
-    return;
-  }
-  container.innerHTML = state.scripts.map((s, i) => '<div class="script-card">' +
+
+ '<div class="script-card">' +
     '<div class="script-header">' +
     '<div><div class="script-topic">' + s.topic + '</div>' +
     '<div class="script-meta">' + s.platform + ' · ' + new Date(s.generated_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</div></div>' +
@@ -3797,7 +3786,7 @@ async function loadTrends() {
   const cached = localStorage.getItem(cacheKey);
   const cachedAt = parseInt(localStorage.getItem(cacheTime) || '0');
   const thirtyMin = 30 * 60 * 1000;
-  if (cached && Date.now() - cachedAt < thirtyMin) {
+  if (cached &amp;&amp; Date.now() - cachedAt &lt; thirtyMin) {
     state.trends = JSON.parse(cached);
     document.getElementById('stat-topics').textContent = state.trends.length;
     document.getElementById('stat-yt').textContent = state.trends.length;
@@ -3810,15 +3799,15 @@ async function loadTrends() {
     const queries = ['AI tools 2026','ChatGPT tips','AI productivity'];
     const allItems = [];
     for (const q of queries) {
-      const r = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&q=' + encodeURIComponent(q) + '&type=video&order=viewCount&maxResults=4&regionCode=US&key=' + key);
+      const r = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&amp;q=' + encodeURIComponent(q) + '&amp;type=video&amp;order=viewCount&amp;maxResults=4®ionCode=US&amp;key=' + key);
       const d = await r.json();
-      if (d.error && d.error.code === 403) {
+      if (d.error &amp;&amp; d.error.code === 403) {
         // Quota exceeded — use sample trends
         showSampleTrends();
         showToast('YouTube quota reset at midnight — showing curated trends');
         return;
       }
-      if (d.items) d.items.forEach(item => allItems.push({
+      if (d.items) d.items.forEach(item =&gt; allItems.push({
         id: item.id.videoId, title: item.snippet.title, channel: item.snippet.channelTitle,
         views: Math.floor(Math.random() * 2000000) + 100000, platform: 'YouTube', hot: true
       }));
@@ -3862,12 +3851,12 @@ function renderTrends() {
     container.innerHTML = '<div class="empty"><div class="empty-text">No trends found — hit Refresh Trends</div></div>';
     return;
   }
-  container.innerHTML = '<div class="trends-grid">' + state.trends.map((t, i) => '<div class="trend-card">' +
+  container.innerHTML = '<div class="trends-grid">' + state.trends.map((t, i) =&gt; '<div class="trend-card">' +
     '<div class="trend-header"><span class="trend-platform">' + t.platform + '</span>' +
     (t.hot ? '<span class="trend-badge hot">HOT</span>' : '') + '</div>' +
     '<div class="trend-title">' + t.title + '</div>' +
     '<div class="trend-meta">' + formatNum(t.views) + ' views</div>' +
-    '<div class="trend-actions"><button class="trend-btn" onclick="useTrend(' + i + ')">Use This &rarr;</button></div>' +
+    '<div class="trend-actions"><button class="trend-btn" onclick="useTrend(' + i + ')">Use This →</button></div>' +
     '</div>').join('') + '</div>';
 }
 
@@ -3885,8 +3874,8 @@ function useTrend(i) {
 }
 
 function formatNum(n) {
-  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n/1000).toFixed(0) + 'K';
+  if (n &gt;= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n &gt;= 1000) return (n/1000).toFixed(0) + 'K';
   return n.toString();
 }
 
@@ -3897,9 +3886,9 @@ function prefillScript(topic) {
   document.getElementById('script-topic').focus();
 }
 
-document.querySelectorAll('.chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+document.querySelectorAll('.chip').forEach(chip =&gt; {
+  chip.addEventListener('click', () =&gt; {
+    document.querySelectorAll('.chip').forEach(c =&gt; c.classList.remove('active'));
     chip.classList.add('active');
   });
 });
@@ -3968,19 +3957,19 @@ async function loadAnalytics() {
   const dayLabels = ['S','M','T','W','T','F','S'];
   const todayIdx = today.getDay(); // 0=Sun, 1=Mon... 6=Sat
   const labels = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 6; i &gt;= 0; i--) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     labels.push(dayLabels[d.getDay()]);
   }
   const labelContainer = document.getElementById('chart-labels');
   if (labelContainer) {
-    labelContainer.innerHTML = labels.map(l => '<div class="chart-label">' + l + '</div>').join('');
+    labelContainer.innerHTML = labels.map(l =&gt; '<div class="chart-label">' + l + '</div>').join('');
   }
 
   // Mark today's bar as active
   const bars = document.querySelectorAll('#chart-views .bar');
-  bars.forEach((b, i) => {
+  bars.forEach((b, i) =&gt; {
     b.classList.remove('active');
     if (i === 6) b.classList.add('active');
   });
@@ -4015,7 +4004,7 @@ async function loadAnalytics() {
       document.getElementById('ms-4000').textContent = '0 / 4,000';
 
       const monetizeEl = document.getElementById('ms-monetize');
-      if (subs >= 1000) {
+      if (subs &gt;= 1000) {
         monetizeEl.textContent = 'Eligible';
         monetizeEl.className = 'analytics-val up';
       } else {
@@ -4023,13 +4012,13 @@ async function loadAnalytics() {
         monetizeEl.className = 'analytics-val down';
       }
 
-      document.getElementById('a-views-delta').textContent = views > 0 ? '↑ Growing' : '↑ Getting started';
-      document.getElementById('a-subs-delta').textContent = subs > 0 ? '↑ Growing' : '↑ Getting started';
+      document.getElementById('a-views-delta').textContent = views &gt; 0 ? '↑ Growing' : '↑ Getting started';
+      document.getElementById('a-subs-delta').textContent = subs &gt; 0 ? '↑ Growing' : '↑ Getting started';
 
       showToast('Analytics synced from YouTube');
     }
   } catch(e) {
-    if (e.message && e.message.includes('quota')) {
+    if (e.message &amp;&amp; e.message.includes('quota')) {
       showToast('YouTube quota exceeded — resets at midnight Pacific');
     } else {
       showToast('Could not sync — check VPS connection');
@@ -4041,7 +4030,7 @@ async function loadAnalytics() {
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() =&gt; t.classList.remove('show'), 2500);
 }
 
 // ── CALENDAR ──
@@ -4071,12 +4060,12 @@ async function generateCalendar() {
     '<div class="cal-loading">' + Array(7).fill('<div class="cal-skeleton"></div>').join('') + '</div>';
 
   // Pull current trending topics to inform calendar
-  const trendingTopics = state.trends.slice(0, 5).map(t => t.title).join(', ');
-  const hasTrends = trendingTopics.length > 0;
+  const trendingTopics = state.trends.slice(0, 5).map(t =&gt; t.title).join(', ');
+  const hasTrends = trendingTopics.length &gt; 0;
 
   const days = [];
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i &lt; 7; i++) {
     const date = new Date(sunday);
     date.setDate(sunday.getDate() + i);
     const dayName = CAL_DAYS[i];
@@ -4092,7 +4081,7 @@ async function generateCalendar() {
         { type: 'Trending AI News',    angle: 'Cover a recent AI tool launch or update that everyday people should know about. Make it feel like breaking news they cant afford to miss.' },
         { type: 'Tool Review',         angle: 'Review a specific AI tool you tested personally. Give an honest verdict. Beginners want to know: is it actually worth it?' },
         { type: 'Beginner Tutorial',   angle: 'Teach one specific thing ChatGPT or another popular AI tool can do that most people dont know. The wow moment is everything.' },
-        { type: 'Money & Productivity',angle: 'Show how a specific AI tool saves time or makes money for regular people. Concrete numbers and real use cases only.' },
+        { type: 'Money &amp; Productivity',angle: 'Show how a specific AI tool saves time or makes money for regular people. Concrete numbers and real use cases only.' },
         { type: 'Tool Comparison',     angle: 'Compare two popular AI tools head to head. Help beginners decide which one is actually worth their time.' },
         { type: 'Trending AI News',    angle: 'What is the most talked about AI development this week? Break it down simply so anyone can understand why it matters.' },
         { type: 'Beginner Tutorial',   angle: 'One simple AI trick or feature that changes how someone does something they do every day — writing, planning, creating, communicating.' }
@@ -4101,20 +4090,20 @@ async function generateCalendar() {
       const ct = contentTypes[i];
 
       // Pull AI-specific trends — named tools only
-      const aiTrends = state.trends.filter(t =>
+      const aiTrends = state.trends.filter(t =&gt;
         /\b(ChatGPT|Claude|Gemini|Copilot|Midjourney|Runway|Sora|Pika|ElevenLabs|Jasper|Writesonic|GPT|Perplexity|Grok|Llama|AI tool|AI video|AI image|AI writing|AI voice|AI music|AI coding|AI automation|AI agent)\b/i.test(t.title)
-      ).slice(0, 3).map(t => t.title).join(', ');
+      ).slice(0, 3).map(t =&gt; t.title).join(', ');
 
       // Curated evergreen AI topics by content type
       const evergreenByType = {
         'Trending AI News':     'GPT-5 release features, Google Gemini Ultra updates, OpenAI new products 2026',
         'Tool Review':          'Runway Gen-3 video generation, ElevenLabs voice cloning, Midjourney v7, Perplexity AI search',
         'Beginner Tutorial':    'ChatGPT prompt tricks, Claude document analysis, AI email writing, AI meeting summaries',
-        'Money & Productivity': 'AI freelancing tools, automating social media with AI, AI for small business owners',
+        'Money &amp; Productivity': 'AI freelancing tools, automating social media with AI, AI for small business owners',
         'Tool Comparison':      'ChatGPT vs Claude vs Gemini, Midjourney vs DALL-E, Jasper vs Writesonic'
       };
 
-      const topicPool = aiTrends.length > 0 ? aiTrends : evergreenByType[ct.type] || evergreenByType['Beginner Tutorial'];
+      const topicPool = aiTrends.length &gt; 0 ? aiTrends : evergreenByType[ct.type] || evergreenByType['Beginner Tutorial'];
 
       const trendContext = 'Content type for today: ' + ct.type + '. Angle: ' + ct.angle + ' Topic pool to draw from: ' + topicPool + '.';
 
@@ -4128,7 +4117,7 @@ async function generateCalendar() {
       });
       const data = await res.json();
       const text = data.script || '';
-      const get = (k) => { const m = text.match(new RegExp(k + '[:\s]+([^\n]+)', 'i')); return m ? m[1].replace(/^\[|\]$/g,'').trim() : ''; };
+      const get = (k) =&gt; { const m = text.match(new RegExp(k + '[:\s]+([^\n]+)', 'i')); return m ? m[1].replace(/^\[|\]$/g,'').trim() : ''; };
 
       // Generate platform-specific trending hashtags
       const affiliate = get('AFFILIATE') || 'None';
@@ -4157,19 +4146,19 @@ async function generateCalendar() {
 function renderCalendarDays(days, sunday) {
   const full = [...days];
   const base = sunday || new Date();
-  while (full.length < 7) {
+  while (full.length &lt; 7) {
     const i = full.length;
     const d = new Date(base); d.setDate(base.getDate() + i);
     full.push({ day: CAL_DAYS[i], date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Generating...', hook: '', format: CAL_FORMATS[i], affiliate: '', trendAngle: '', tags: '', trendScore: 0 });
   }
   document.getElementById('calendar-container').innerHTML = '<div class="calendar-grid">' +
     full.map(function(d) {
-      const scoreColor = d.trendScore >= 80 ? 'var(--gold)' : d.trendScore >= 60 ? 'var(--white-dim)' : 'var(--white-dim)';
+      const scoreColor = d.trendScore &gt;= 80 ? 'var(--gold)' : d.trendScore &gt;= 60 ? 'var(--white-dim)' : 'var(--white-dim)';
       return '<div class="cal-day">' +
         '<div class="cal-day-header">' +
           '<div class="cal-day-name">' + d.day + '</div>' +
           '<div style="display:flex;align-items:center;gap:8px">' +
-            (d.trendScore > 0 ? '<span style="font-family:var(--font-mono);font-size:9px;color:' + scoreColor + '">' + d.trendScore + '% TREND</span>' : '') +
+            (d.trendScore &gt; 0 ? '<span style="font-family:var(--font-mono);font-size:9px;color:' + scoreColor + '">' + d.trendScore + '% TREND</span>' : '') +
             '<div class="cal-day-num">' + d.date + '</div>' +
           '</div>' +
         '</div>' +
@@ -4178,10 +4167,10 @@ function renderCalendarDays(days, sunday) {
         (d.trendAngle ? '<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-bottom:10px;line-height:1.5">' + d.trendAngle + '</div>' : '') +
         '<div class="cal-meta">' +
           (d.contentType ? '<span class="cal-tag" style="border-color:rgba(201,160,32,0.5);color:var(--gold)">' + d.contentType + '</span>' : '') +
-          (d.affiliate && d.affiliate.toLowerCase() !== 'none' ? '<span class="cal-tag affiliate">' + d.affiliate + '</span>' : '') +
+          (d.affiliate &amp;&amp; d.affiliate.toLowerCase() !== 'none' ? '<span class="cal-tag affiliate">' + d.affiliate + '</span>' : '') +
         '</div>' +
         '<div style="font-size:11px;color:var(--white-dim);margin-bottom:14px">' + d.tags + '</div>' +
-        '<div class="cal-actions"><button class="cal-btn" onclick="scriptFromCalendar(this.dataset.title)" data-title="' + d.title.replace(/"/g,'&quot;') + '">Write Script &#8594;</button></div>' +
+        '<div class="cal-actions"><button class="cal-btn" onclick="scriptFromCalendar(this.dataset.title)" data-title="' + d.title.replace(/" g,'&quot;')="" +="" '"="">Write Script →</button></div>' +
         '</div>';
     }).join('') + '</div>';
 }
@@ -4198,7 +4187,7 @@ async function connectYouTube() {
   if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
   showToast('Opening YouTube authorization...');
   window.open(vpsUrl + '/oauth/youtube', '_blank', 'width=600,height=700');
-  setTimeout(() => checkYouTubeStatus(), 10000);
+  setTimeout(() =&gt; checkYouTubeStatus(), 10000);
 }
 
 async function checkYouTubeStatus() {
@@ -4243,7 +4232,7 @@ const PLATFORM_TAGS = {
   facebook: ['AItools', 'technology', 'ChatGPT', 'productivity', 'techreview', 'artificialintelligence', 'AIhacks', 'digitaltools', 'techlife', 'AI2026']
 };
 
-const CONTENT_TYPES = ['Trending AI News', 'Tool Review', 'Beginner Tutorial', 'Money & Productivity', 'Tool Comparison', 'Trending AI News', 'Tutorial'];
+const CONTENT_TYPES = ['Trending AI News', 'Tool Review', 'Beginner Tutorial', 'Money &amp; Productivity', 'Tool Comparison', 'Trending AI News', 'Tutorial'];
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 function getWeekDates() {
@@ -4251,7 +4240,7 @@ function getWeekDates() {
   const sunday = new Date(today);
   sunday.setDate(today.getDate() - today.getDay());
   const days = [];
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i &lt; 7; i++) {
     const d = new Date(sunday);
     d.setDate(sunday.getDate() + i);
     days.push(d);
@@ -4273,34 +4262,34 @@ function extractMetaFromScript(script) {
   // Extract tags
   const tagsMatch = script.match(/TAGS:\s*(.+)/i);
   const tagsStr = tagsMatch ? tagsMatch[1] : '';
-  const tags = tagsStr.split(/\s+/).filter(t => t.startsWith('#')).map(t => t.replace('#', ''));
+  const tags = tagsStr.split(/\s+/).filter(t =&gt; t.startsWith('#')).map(t =&gt; t.replace('#', ''));
   
   const title = hook || script.substring(0, 80);
   const description = scriptBody || script.substring(0, 200);
   
-  return { title, description, tags: tags.length > 0 ? tags : PLATFORM_TAGS.youtube };
+  return { title, description, tags: tags.length &gt; 0 ? tags : PLATFORM_TAGS.youtube };
 }
 
 function buildPlatformMetadata(title, description, tags) {
   return {
     youtube: {
       title: title.substring(0, 100),
-      description: description + '\n\nFollow @AIWhileYouSleeping for daily AI tool reviews.\n\n' + tags.map(t => '#' + t).join(' '),
+      description: description + '\n\nFollow @AIWhileYouSleeping for daily AI tool reviews.\n\n' + tags.map(t =&gt; '#' + t).join(' '),
       tags: tags.concat(['shorts', 'AI2026']).slice(0, 15)
     },
     tiktok: {
       title: title.substring(0, 80),
-      description: tags.map(t => '#' + t).join(' ') + ' #fyp #foryou',
+      description: tags.map(t =&gt; '#' + t).join(' ') + ' #fyp #foryou',
       tags: PLATFORM_TAGS.tiktok
     },
     instagram: {
       title: title.substring(0, 80),
-      description: description.substring(0, 150) + '...\n\n' + PLATFORM_TAGS.instagram.map(t => '#' + t).join(' '),
+      description: description.substring(0, 150) + '...\n\n' + PLATFORM_TAGS.instagram.map(t =&gt; '#' + t).join(' '),
       tags: PLATFORM_TAGS.instagram
     },
     facebook: {
       title: title.substring(0, 100),
-      description: description + '\n\nFollow AI While You Sleeping for daily AI tool reviews!\n\n' + PLATFORM_TAGS.facebook.map(t => '#' + t).join(' '),
+      description: description + '\n\nFollow AI While You Sleeping for daily AI tool reviews!\n\n' + PLATFORM_TAGS.facebook.map(t =&gt; '#' + t).join(' '),
       tags: PLATFORM_TAGS.facebook
     }
   };
@@ -4312,9 +4301,9 @@ function autoFillFromScript(script) {
   const titleEl = document.getElementById('upload-title');
   const descEl = document.getElementById('upload-description');
   const tagsEl = document.getElementById('upload-tags');
-  if (titleEl && !titleEl.value) titleEl.value = meta.title;
-  if (descEl && !descEl.value) descEl.value = meta.description;
-  if (tagsEl && !tagsEl.value) tagsEl.value = meta.tags.join(', ');
+  if (titleEl &amp;&amp; !titleEl.value) titleEl.value = meta.title;
+  if (descEl &amp;&amp; !descEl.value) descEl.value = meta.description;
+  if (tagsEl &amp;&amp; !tagsEl.value) tagsEl.value = meta.tags.join(', ');
 }
 
 function addToManualQueue() {
@@ -4325,7 +4314,7 @@ function addToManualQueue() {
   
   if (!title) { showToast('Add a title first'); return; }
   
-  const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
+  const tags = tagsStr.split(',').map(t =&gt; t.trim()).filter(Boolean);
   const platforms = buildPlatformMetadata(title, description, tags);
   
   const item = {
@@ -4359,7 +4348,7 @@ function renderManualQueue() {
     return;
   }
   
-  container.innerHTML = queue.map((item, idx) => `
+  container.innerHTML = queue.map((item, idx) =&gt; `
     <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);padding:20px;margin-bottom:1px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
         <div style="flex:1">
@@ -4372,7 +4361,7 @@ function renderManualQueue() {
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${['youtube','tiktok','instagram','facebook'].map(p => `
+        ${['youtube','tiktok','instagram','facebook'].map(p =&gt; `
           <div style="background:rgba(240,160,32,0.08);border:1px solid rgba(240,160,32,0.2);padding:6px 12px;font-size:9px;letter-spacing:2px;color:var(--gold)">${p.toUpperCase()}</div>
         `).join('')}
       </div>
@@ -4411,7 +4400,7 @@ async function postQueueItem(idx) {
       renderManualQueue();
       loadAnalytics();
     } else {
-      showToast(data.error && data.error.includes('quota') ? 'Quota exceeded — try after midnight' : 'Upload failed: ' + data.error);
+      showToast(data.error &amp;&amp; data.error.includes('quota') ? 'Quota exceeded — try after midnight' : 'Upload failed: ' + data.error);
     }
   } catch(e) {
     showToast('Cannot reach VPS');
@@ -4439,11 +4428,11 @@ function renderWeeklyQueue() {
     rangeEl.textContent = days[0].toLocaleDateString('en-US', {month:'short',day:'numeric'}) + ' — ' + days[6].toLocaleDateString('en-US', {month:'short',day:'numeric'});
   }
   
-  grid.innerHTML = days.map((day, i) => {
+  grid.innerHTML = days.map((day, i) =&gt; {
     const dateKey = day.toISOString().split('T')[0];
     const plan = weeklyPlan[dateKey] || {};
     const isToday = day.toDateString() === today.toDateString();
-    const isPast = day < today && !isToday;
+    const isPast = day &lt; today &amp;&amp; !isToday;
     const contentType = CONTENT_TYPES[i];
     
     return `
@@ -4484,7 +4473,7 @@ async function generateWeeklyPlan() {
     'AI productivity hack most people miss'
   ];
   
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i &lt; 7; i++) {
     const dateKey = days[i].toISOString().split('T')[0];
     if (!weeklyPlan[dateKey]) {
       weeklyPlan[dateKey] = {
@@ -4514,7 +4503,7 @@ async function generateTodayScript() {
     });
     if ((await res.json()).success) {
       showToast('Script generating — check Video tab in 30 seconds');
-      setTimeout(() => { loadSchedulerStatus(); renderWeeklyQueue(); }, 30000);
+      setTimeout(() =&gt; { loadSchedulerStatus(); renderWeeklyQueue(); }, 30000);
     }
   } catch(e) { showToast('Cannot reach VPS'); }
 }
@@ -4548,7 +4537,7 @@ async function loadDailyScript() {
   try {
     const res = await fetch(vpsUrl + '/scheduler/get-script');
     const data = await res.json();
-    if (data.exists && data.script) {
+    if (data.exists &amp;&amp; data.script) {
       document.getElementById('daily-script-preview').style.display = 'block';
       document.getElementById('daily-script-text').textContent = data.script;
     }
@@ -4580,7 +4569,7 @@ function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
   const invideoPreamble = `Create a 45-60 second vertical 9:16 YouTube Short in the AI While You Sleeping style.\n\nVISUAL STYLE: Dark navy and black backgrounds with vibrant neon pops of cyan, gold, and purple. Fast cuts every 1-2 seconds. Bold white text captions with black outline. Cinematic lighting with glowing accents.\n\nVOICEOVER: Confident friend energy. Mix of directness and curiosity. Never robotic. Real talk.\n\nMUSIC: Match the topic — lo-fi hip hop for productivity tools, trap beats for hype reveals, cinematic builds for mind-blowing moments.\n\nCAPTIONS: Always on. Bold white text, black outline. Large and readable on mobile.\n\n---SCRIPT---\n`;
-  navigator.clipboard.writeText(invideoPreamble + s.script).then(() => {
+  navigator.clipboard.writeText(invideoPreamble + s.script).then(() =&gt; {
     showToast('Copied! Now paste into InVideo');
     autoFillFromScript(s.script);
     markStep1Done();
@@ -4609,7 +4598,7 @@ CAPTIONS: Always on. Bold white text, black outline. Large and readable on mobil
 
 ---SCRIPT BELOW---
 `;
-  navigator.clipboard.writeText(invideoPreamble + script).then(() => showToast('Script + InVideo prompt copied!'));
+  navigator.clipboard.writeText(invideoPreamble + script).then(() =&gt; showToast('Script + InVideo prompt copied!'));
 }
 
 async function markVideoReady() {
@@ -4780,7 +4769,7 @@ async function generateMultiClipVideo() {
   setProgress(5);
 
   // Extract topic from prompt
-  const topic = prompt.length > 50 ? prompt.substring(0, 50) : prompt;
+  const topic = prompt.length &gt; 50 ? prompt.substring(0, 50) : prompt;
   const scenes = SCENE_TEMPLATES[style] || SCENE_TEMPLATES.anime;
   const stylePrefix = STYLE_PROMPTS[style] || STYLE_PROMPTS.anime;
 
@@ -4794,7 +4783,7 @@ async function generateMultiClipVideo() {
         topic: topic,
         style: style,
         style_prompt: stylePrefix,
-        scenes: scenes.slice(0, numClips).map(s => s.replace(/{topic}/g, topic)),
+        scenes: scenes.slice(0, numClips).map(s =&gt; s.replace(/{topic}/g, topic)),
         num_clips: numClips,
         replicate_key: replicateKey,
         script: prompt
@@ -4815,9 +4804,9 @@ async function generateMultiClipVideo() {
 
 async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
   let dots = 0;
-  const interval = setInterval(async () => {
+  const interval = setInterval(async () =&gt; {
     try {
-      const res = await fetch(vpsUrl + '/video/job-status/' + jobId + '?clips=1&key=' + replicateKey);
+      const res = await fetch(vpsUrl + '/video/job-status/' + jobId + '?clips=1&amp;key=' + replicateKey);
       const data = await res.json();
 
       const completed = data.completed || 0;
@@ -4835,14 +4824,14 @@ async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
         setVideoMsg('Stitching ' + data.total + ' clips together...');
       }
 
-      if (data.status === 'complete' && data.output_url) {
+      if (data.status === 'complete' &amp;&amp; data.output_url) {
         clearInterval(interval);
         setProgress(100);
         setStepStatus('video', 'done', 'All clips done');
         setStepStatus('stitch', 'done', 'Complete');
         setVideoMsg('Video ready!');
         // Use clip_urls from job for preview (direct Replicate CDN — no CORS issues)
-        const previewUrl = data.clip_urls && data.clip_urls.length > 0
+        const previewUrl = data.clip_urls &amp;&amp; data.clip_urls.length &gt; 0
           ? data.clip_urls[0]
           : (vpsUrl + '/video/latest?t=' + Date.now());
         showVideoPreview(previewUrl);
@@ -4859,7 +4848,7 @@ async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
 
     } catch(e) {
       dots++;
-      if (dots > 60) { clearInterval(interval); showToast('Timed out — try again'); resetVideoBtn(); }
+      if (dots &gt; 60) { clearInterval(interval); showToast('Timed out — try again'); resetVideoBtn(); }
     }
   }, 5000);
 }
@@ -4911,7 +4900,7 @@ function pollVideoStatus(replicateKey, vpsUrl) {
   if (videoPollingInterval) clearInterval(videoPollingInterval);
   let progress = 20;
 
-  videoPollingInterval = setInterval(async () => {
+  videoPollingInterval = setInterval(async () =&gt; {
     try {
       const res = await fetch(vpsUrl + '/video/status/' + currentPredictionId + '?key=' + replicateKey);
       const data = await res.json();
@@ -4919,7 +4908,7 @@ function pollVideoStatus(replicateKey, vpsUrl) {
       progress = Math.min(progress + 5, 85);
       setProgress(progress);
 
-      if (data.status === 'succeeded' && data.output) {
+      if (data.status === 'succeeded' &amp;&amp; data.output) {
         clearInterval(videoPollingInterval);
         setProgress(90);
         setVideoMsg('Video ready — downloading...');
@@ -5022,7 +5011,7 @@ function showVideoPreview(url) {
     '<div style="margin-top:24px;border:1px solid rgba(240,160,32,0.3);background:rgba(30,15,50,0.5);">' +
     '<div style="padding:16px 20px;border-bottom:1px solid rgba(240,160,32,0.15);font-size:9px;letter-spacing:6px;color:var(--gold)">VIDEO PREVIEW</div>' +
     '<div style="padding:20px;display:flex;justify-content:center;background:#000">' +
-    '<video controls autoplay muted loop playsinline style="max-height:500px;max-width:100%;border-radius:2px">' +
+    '<video controls="" autoplay="" muted="" loop="" playsinline="" style="max-height:500px;max-width:100%;border-radius:2px">' +
     '<source src="' + url + '" type="video/mp4">' +
     '</video>' +
     '</div>' +
@@ -5045,7 +5034,7 @@ function showVideoActions() {
 async function uploadGeneratedVideo() {
   const vpsUrl = state.settings.vpsUrl;
   const prompt = document.getElementById('video-prompt').value.trim();
-  const title = prompt.length > 80 ? prompt.substring(0, 77) + '...' : prompt;
+  const title = prompt.length &gt; 80 ? prompt.substring(0, 77) + '...' : prompt;
   const bar = document.getElementById('video-action-bar');
   if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--gold);letter-spacing:3px">Uploading to YouTube...</div>';
   setStepStatus('upload', 'running', 'Uploading...');
@@ -5104,7 +5093,7 @@ async function runAutoPilot() {
 
   // Step 1 — Pick top trending topic
   if (!state.trends.length) await loadTrends();
-  const trend = state.trends.find(t => t.hot) || state.trends[0];
+  const trend = state.trends.find(t =&gt; t.hot) || state.trends[0];
   if (!trend) { showToast('No trends loaded'); return; }
 
   showTab('video');
@@ -5142,7 +5131,7 @@ let analyticsInterval = null;
 function startRealtimeAnalytics() {
   if (analyticsInterval) return;
   // Sync every 5 minutes
-  analyticsInterval = setInterval(() => {
+  analyticsInterval = setInterval(() =&gt; {
     syncAnalyticsFromServer();
   }, 5 * 60 * 1000);
 }
@@ -5166,15 +5155,15 @@ async function loadAnalytics() {
   const today = new Date();
   const dayLabels = ['S','M','T','W','T','F','S'];
   const labels = [];
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 6; i &gt;= 0; i--) {
     const d = new Date(today); d.setDate(today.getDate() - i);
     labels.push(dayLabels[d.getDay()]);
   }
   const labelContainer = document.getElementById('chart-labels');
-  if (labelContainer) labelContainer.innerHTML = labels.map(l => '<div class="chart-label">' + l + '</div>').join('');
+  if (labelContainer) labelContainer.innerHTML = labels.map(l =&gt; '<div class="chart-label">' + l + '</div>').join('');
 
   const bars = document.querySelectorAll('#chart-views .bar');
-  bars.forEach((b, i) => { b.classList.remove('active'); if (i === 6) b.classList.add('active'); });
+  bars.forEach((b, i) =&gt; { b.classList.remove('active'); if (i === 6) b.classList.add('active'); });
 
   const syncEl = document.getElementById('a-synced');
   if (syncEl) syncEl.textContent = today.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
@@ -5183,7 +5172,7 @@ async function loadAnalytics() {
   try {
     const cacheRes = await fetch(vpsUrl + '/analytics/data');
     const cacheData = await cacheRes.json();
-    if (cacheData.youtube && cacheData.youtube.name) {
+    if (cacheData.youtube &amp;&amp; cacheData.youtube.name) {
       updateAnalyticsUI(cacheData);
     }
   } catch(e) {}
@@ -5195,7 +5184,7 @@ async function loadAnalytics() {
     if (data.success) {
       updateAnalyticsUI(data.data);
       showToast('Analytics synced from YouTube');
-    } else if (data.error && data.error.includes('quota')) {
+    } else if (data.error &amp;&amp; data.error.includes('quota')) {
       showToast('YouTube quota exceeded — resets midnight Pacific');
     }
   } catch(e) {
@@ -5211,7 +5200,7 @@ function updateAnalyticsUI(data) {
   const views = yt.views || 0;
   const videos = yt.videos || 0;
 
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setEl = (id, val) =&gt; { const el = document.getElementById(id); if (el) el.textContent = val; };
 
   setEl('a-views', formatNum(views));
   setEl('a-followers', formatNum(subs));
@@ -5227,21 +5216,21 @@ function updateAnalyticsUI(data) {
 
   const monetizeEl = document.getElementById('ms-monetize');
   if (monetizeEl) {
-    monetizeEl.textContent = subs >= 1000 ? 'Eligible' : 'Not eligible yet';
-    monetizeEl.className = 'analytics-val ' + (subs >= 1000 ? 'up' : 'down');
+    monetizeEl.textContent = subs &gt;= 1000 ? 'Eligible' : 'Not eligible yet';
+    monetizeEl.className = 'analytics-val ' + (subs &gt;= 1000 ? 'up' : 'down');
   }
 
   const deltaViews = document.getElementById('a-views-delta');
-  if (deltaViews) deltaViews.textContent = views > 0 ? '↑ Growing' : '↑ Getting started';
+  if (deltaViews) deltaViews.textContent = views &gt; 0 ? '↑ Growing' : '↑ Getting started';
   const deltaSubs = document.getElementById('a-subs-delta');
-  if (deltaSubs) deltaSubs.textContent = subs > 0 ? '↑ Growing' : '↑ Getting started';
+  if (deltaSubs) deltaSubs.textContent = subs &gt; 0 ? '↑ Growing' : '↑ Getting started';
 
   // Update chart with history data
-  if (data.history && data.history.length > 0) {
+  if (data.history &amp;&amp; data.history.length &gt; 0) {
     const history = data.history.slice(-7);
-    const maxViews = Math.max(...history.map(h => h.views), 1);
+    const maxViews = Math.max(...history.map(h =&gt; h.views), 1);
     const bars = document.querySelectorAll('#chart-views .bar');
-    bars.forEach((bar, i) => {
+    bars.forEach((bar, i) =&gt; {
       const entry = history[i] || { views: 0 };
       const pct = Math.max((entry.views / maxViews) * 100, 5);
       bar.style.height = pct + '%';
@@ -5249,11 +5238,11 @@ function updateAnalyticsUI(data) {
   }
 
   // Recent videos
-  if (data.recent_videos && data.recent_videos.length > 0) {
+  if (data.recent_videos &amp;&amp; data.recent_videos.length &gt; 0) {
     const topCard = document.querySelector('#panel-analytics .analytics-card:nth-child(3)');
     if (topCard) {
       topCard.innerHTML = '<div class="analytics-title">Recent Videos</div>' +
-        data.recent_videos.slice(0, 4).map(v =>
+        data.recent_videos.slice(0, 4).map(v =&gt;
           '<div class="analytics-row"><span class="analytics-label" style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + v.title + '</span>' +
           '<span class="analytics-val">' + formatNum(v.views) + ' views</span></div>'
         ).join('');
@@ -5271,9 +5260,9 @@ async function runHealthCheck() {
 
   // 1. Check for duplicate nav tabs
   const navButtons = document.querySelectorAll('.nav-tab');
-  const navLabels = Array.from(navButtons).map(b => b.textContent.trim());
-  const navDupes = navLabels.filter((v, i, a) => a.indexOf(v) !== i);
-  if (navDupes.length > 0) {
+  const navLabels = Array.from(navButtons).map(b =&gt; b.textContent.trim());
+  const navDupes = navLabels.filter((v, i, a) =&gt; a.indexOf(v) !== i);
+  if (navDupes.length &gt; 0) {
     healthIssues.push({type:'nav_dupe', desc:'Duplicate nav tabs: ' + navDupes.join(', '), fixable: true});
     report.push({label:'Nav tabs', status:'err', msg:'Duplicate found: ' + navDupes.join(', ')});
   } else {
@@ -5281,7 +5270,7 @@ async function runHealthCheck() {
   }
 
   // 2. Check all nav tabs have matching panels
-  const navOnclicks = Array.from(navButtons).map(b => b.getAttribute('onclick')?.match(/showTab\'(\w+)\'/)?.[1] || b.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/)?.[1]);
+  const navOnclicks = Array.from(navButtons).map(b =&gt; b.getAttribute('onclick')?.match(/showTab\'(\w+)\'/)?.[1] || b.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/)?.[1]);
   for (const tabId of navOnclicks) {
     if (!tabId) continue;
     const panel = document.getElementById('panel-' + tabId);
@@ -5331,9 +5320,9 @@ async function runHealthCheck() {
         signal: AbortSignal.timeout(5000)
       });
       const ghData = await ghRes.json();
-      if (ghRes.ok && ghData.permissions?.push) {
+      if (ghRes.ok &amp;&amp; ghData.permissions?.push) {
         report.push({label:'GitHub Token', status:'ok', msg:'Valid — push access confirmed'});
-      } else if (ghRes.ok && !ghData.permissions?.push) {
+      } else if (ghRes.ok &amp;&amp; !ghData.permissions?.push) {
         healthIssues.push({type:'gh_no_push', desc:'GitHub token missing repo write permission', fixable: false});
         report.push({label:'GitHub Token', status:'err', msg:'No write access — regenerate with repo scope'});
       } else if (ghRes.status === 401) {
@@ -5389,10 +5378,10 @@ async function runHealthCheck() {
   // Update health dot color
   const dot = document.getElementById('health-dot');
   if (dot) {
-    const errors = healthIssues.filter(i => !i.fixable || i.type === 'vps_down');
-    const warnings = healthIssues.filter(i => i.type === 'no_vps' || i.type === 'no_ant' || i.type === 'no_yt');
-    if (errors.length > 0) dot.style.background = '#F03C3C';
-    else if (warnings.length > 0) dot.style.background = '#F0A020';
+    const errors = healthIssues.filter(i =&gt; !i.fixable || i.type === 'vps_down');
+    const warnings = healthIssues.filter(i =&gt; i.type === 'no_vps' || i.type === 'no_ant' || i.type === 'no_yt');
+    if (errors.length &gt; 0) dot.style.background = '#F03C3C';
+    else if (warnings.length &gt; 0) dot.style.background = '#F0A020';
     else dot.style.background = '#6BAF8A';
     dot.title = healthIssues.length === 0 ? 'All systems healthy' : healthIssues.length + ' issue(s) found';
   }
@@ -5405,21 +5394,21 @@ function renderHealthReport(report) {
   const container = document.getElementById('health-report-content');
   if (!container) return;
 
-  const errors = report.filter(r => r.status === 'err').length;
-  const warnings = report.filter(r => r.status === 'warn').length;
+  const errors = report.filter(r =&gt; r.status === 'err').length;
+  const warnings = report.filter(r =&gt; r.status === 'warn').length;
 
   container.innerHTML =
     '<div style="margin-bottom:20px;padding:12px;background:rgba(' +
-    (errors > 0 ? '240,60,60' : warnings > 0 ? '240,160,32' : '107,175,138') +
+    (errors &gt; 0 ? '240,60,60' : warnings &gt; 0 ? '240,160,32' : '107,175,138') +
     ',0.1);border:1px solid rgba(' +
-    (errors > 0 ? '240,60,60' : warnings > 0 ? '240,160,32' : '107,175,138') +
+    (errors &gt; 0 ? '240,60,60' : warnings &gt; 0 ? '240,160,32' : '107,175,138') +
     ',0.3)">' +
     '<div style="font-size:12px">' +
-    (errors > 0 ? '⚠ ' + errors + ' error(s), ' + warnings + ' warning(s) found' :
-     warnings > 0 ? '● ' + warnings + ' warning(s) — app functional but needs attention' :
+    (errors &gt; 0 ? '⚠ ' + errors + ' error(s), ' + warnings + ' warning(s) found' :
+     warnings &gt; 0 ? '● ' + warnings + ' warning(s) — app functional but needs attention' :
      '✓ All systems healthy') +
     '</div></div>' +
-    report.map(r => `
+    report.map(r =&gt; `
       <div class="health-row">
         <span style="color:var(--white-dim)">${r.label}</span>
         <div style="display:flex;align-items:center;gap:8px">
@@ -5437,7 +5426,7 @@ async function runSelfHealing() {
     if (issue.type === 'nav_dupe') {
       // Remove duplicate nav tabs
       const seen = new Set();
-      document.querySelectorAll('.nav-tab').forEach(btn => {
+      document.querySelectorAll('.nav-tab').forEach(btn =&gt; {
         const label = btn.textContent.trim();
         if (seen.has(label)) { btn.remove(); fixed++; }
         else seen.add(label);
@@ -5451,7 +5440,7 @@ async function runSelfHealing() {
     }
   }
 
-  showToast(fixed > 0 ? fixed + ' issue(s) auto-fixed' : 'No auto-fixable issues found');
+  showToast(fixed &gt; 0 ? fixed + ' issue(s) auto-fixed' : 'No auto-fixable issues found');
   await runHealthCheck();
 }
 
@@ -5473,20 +5462,20 @@ document.getElementById('script-modal').addEventListener('click', function(e) {
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  window.addEventListener('load', () =&gt; {
     navigator.serviceWorker.register('/awys-dashboard/sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
+      .then(r =&gt; console.log('SW registered'))
+      .catch(e =&gt; console.log('SW error', e));
   });
 }
 
 let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
+window.addEventListener('beforeinstallprompt', e =&gt; {
   e.preventDefault();
   deferredPrompt = e;
   showToast('Tap install to add AWYS to your home screen');
 });
-</script>
+
 
   <!-- HEALTH REPORT MODAL -->
   <div id="health-modal">
@@ -5502,5 +5491,5 @@ window.addEventListener('beforeinstallprompt', e => {
       </div>
     </div>
   </div>
-</body>
-</html>
+
+<veepn-lock-screen><style>@font-face{font-family:FigtreeVF;src:url(chrome-extension://majdfhpaihoncoakbjgbdhglocklcgno/fonts/FigtreeVF.woff2) format("woff2 supports variations"),url(chrome-extension://majdfhpaihoncoakbjgbdhglocklcgno/fonts/FigtreeVF.woff2) format("woff2-variations");font-weight:100 1000;font-display:swap}</style></veepn-lock-screen></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
