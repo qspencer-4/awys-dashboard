@@ -895,7 +895,7 @@
     </div>
     <div style="display:flex;align-items:center;gap:10px">
       <button onclick="deployToGitHub()" id="deploy-btn" style="font-size:9px;letter-spacing:3px;background:transparent;border:1px solid rgba(240,160,32,0.3);color:var(--gold);padding:5px 12px;cursor:pointer;font-family:var(--font-main)">DEPLOY</button>
-      <div class="header-version" onclick="showTab('changelog')">v0.24</div>
+      <div class="header-version" onclick="showTab('changelog')">v0.25</div>
     </div>
   </header>
 
@@ -1075,6 +1075,9 @@
         <span class="section-title">Queue</span>
         <button class="section-action" onclick="generateWeeklyPlan()">Generate Week →</button>
       </div>
+
+      <!-- COUNTDOWN TIMERS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:32px" id="platform-countdowns"></div>
 
       <!-- MANUAL QUEUE -->
       <div style="margin-bottom:40px">
@@ -1271,7 +1274,7 @@
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.24</div>
+          <div class="changelog-version">v0.25</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 3:48 PM MTC</div>
             <ul class="changelog-changes">
@@ -1293,7 +1296,7 @@
         </div>
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.24</div>
+          <div class="changelog-version">v0.25</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 1:30 PM MTC</div>
             <ul class="changelog-changes">
@@ -1533,11 +1536,18 @@
           <div class="checklist-item" id="check-3">
             <div class="check-num" id="check-num-3">3</div>
             <div class="check-body">
-              <div class="check-title">Transfer video to server</div>
-              <div class="check-sub">Open Terminal on your Mac and run the command below — replace YOUR_VIDEO.mp4 with your actual filename</div>
-              <div style="background:rgba(0,0,0,0.4);padding:12px 16px;font-family:monospace;font-size:11px;color:var(--gold);margin-top:10px;border:1px solid rgba(240,160,32,0.15)" id="scp-cmd-display">scp ~/Downloads/YOUR_VIDEO.mp4 root@187.124.240.101:/root/awys/video.mp4</div>
-              <input class="settings-input" placeholder="Type your video filename here to update the command above..." style="width:100%;margin-top:8px" oninput="updateScpCommand(this.value)">
-              <button class="script-btn" style="margin-top:8px" onclick="markStep3Done()">✓ Done — video transferred</button>
+              <div class="check-title">Upload video to server</div>
+              <div class="check-sub">Select your downloaded InVideo MP4 — it uploads directly to the server, no terminal needed</div>
+              <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+                <label style="cursor:pointer">
+                  <input type="file" id="video-file-input" accept="video/mp4,video/*" style="display:none" onchange="uploadVideoFile(this)">
+                  <div class="gen-btn" style="display:inline-block;padding:10px 20px;font-size:10px">Select Video File</div>
+                </label>
+                <div id="upload-file-status" style="font-size:11px;color:var(--white-dim)">No file selected</div>
+              </div>
+              <div class="progress-bar-wrap" id="file-upload-progress" style="display:none;margin-top:12px">
+                <div class="progress-bar-fill" id="file-upload-fill" style="width:0%"></div>
+              </div>
             </div>
             <div class="check-badge" id="check-badge-3">TODO</div>
           </div>
@@ -1879,6 +1889,10 @@ function showTab(tab) {
     if (onclick.includes("'" + tab + "'")) t.classList.add('active');
   });
   if (tab === 'trends') { renderTrends(); renderScripts(); }
+  if (tab === 'queue') { renderManualQueue(); renderWeeklyQueue(); renderCountdowns(); if (!window._countdownInterval) { window._countdownInterval = setInterval(updateCountdowns, 1000); } }
+  if (tab === 'video') { loadSchedulerStatus(); }
+  if (tab === 'analytics') { loadAnalytics(); }
+  if (tab === 'system') { initSystemTab(); }
   if (tab === 'queue') { renderManualQueue(); renderWeeklyQueue(); }
   if (tab === 'video') { loadSchedulerStatus(); }
   if (tab === 'analytics') { loadAnalytics(); }
@@ -2017,8 +2031,31 @@ function renderTrends() {
     (t.hot ? '<span class="trend-badge hot">HOT</span>' : '') + '</div>' +
     '<div class="trend-title">' + t.title + '</div>' +
     '<div class="trend-meta">' + formatNum(t.views) + ' views</div>' +
-    '<div class="trend-actions"><button class="trend-btn" onclick="useTrend(' + i + ')">Use This &rarr;</button></div>' +
+    '<div class="trend-actions"><button class="section-action" style="font-size:9px;padding:6px 14px" onclick="useTrend(' + i + ')">Use This →</button></div>' +
     '</div>').join('') + '</div>';
+}
+
+
+function renderScripts() {
+  const container = document.getElementById('scripts-container');
+  if (!container) return;
+  if (!state.scripts.length) {
+    container.innerHTML = '<div class="empty"><div class="empty-text">Generated scripts will appear here</div></div>';
+    return;
+  }
+  container.innerHTML = state.scripts.map((s, i) =>
+    '<div class="script-card">' +
+    '<div class="script-header">' +
+    '<div><div class="script-topic">' + s.topic + '</div>' +
+    '<div class="script-meta">' + s.platform + ' · ' + new Date(s.generated_at).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) + '</div></div>' +
+    '</div>' +
+    '<div class="script-preview">' + s.script.substring(0, 150) + '...</div>' +
+    '<div class="script-actions">' +
+    '<button class="script-btn" onclick="viewScript(' + i + ')">View</button>' +
+    '<button class="script-btn" style="color:var(--gold);border-color:rgba(240,160,32,0.4)" onclick="copyScriptForInVideo(' + i + ')">Copy for InVideo</button>' +
+    '<button class="script-btn" onclick="addScriptToQueue(' + i + ')">Add to Queue</button>' +
+    '</div></div>'
+  ).join('');
 }
 
 function useTrend(i) {
@@ -2353,17 +2390,25 @@ async function connectYouTube() {
 
 async function checkYouTubeStatus() {
   const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) return;
+  if (!vpsUrl) { 
+    const el = document.getElementById('yt-status');
+    if (el) el.innerHTML = '<div class="status-dot" style="background:var(--danger)"></div> No VPS URL in Settings';
+    return; 
+  }
   try {
-    const res = await fetch(vpsUrl + '/oauth/status');
+    const res = await fetch(vpsUrl + '/oauth/status', {signal: AbortSignal.timeout(5000)});
     const data = await res.json();
     const statusEl = document.getElementById('yt-status');
     if (data.youtube_connected) {
       if (statusEl) statusEl.innerHTML = '<div class="status-dot"></div> Connected';
-      showToast('YouTube connected successfully');
       loadYouTubeStats();
+    } else {
+      if (statusEl) statusEl.innerHTML = '<div class="status-dot" style="background:var(--danger)"></div> Not connected — click Connect YouTube';
     }
-  } catch(e) {}
+  } catch(e) {
+    const el = document.getElementById('yt-status');
+    if (el) el.innerHTML = '<div class="status-dot" style="background:var(--danger)"></div> Cannot reach VPS';
+  }
 }
 
 async function loadYouTubeStats() {
@@ -2384,6 +2429,68 @@ async function loadYouTubeStats() {
 
 
 
+
+
+// ── PLATFORM COUNTDOWN TIMERS ──
+const PLATFORM_POST_TIMES = {
+  youtube:   { hour: 12, min: 0,  label: 'YouTube',   color: '#FF4444', icon: '▶' },
+  tiktok:    { hour: 12, min: 10, label: 'TikTok',    color: '#00f2ea', icon: '♪' },
+  instagram: { hour: 12, min: 5,  label: 'Instagram', color: '#E1306C', icon: '◈' },
+  facebook:  { hour: 12, min: 15, label: 'Facebook',  color: '#1877F2', icon: 'f' }
+};
+
+function getNextPostTime(hour, min) {
+  const now = new Date();
+  const next = new Date();
+  next.setHours(hour, min, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next;
+}
+
+function formatCountdown(ms) {
+  if (ms <= 0) return '00:00:00';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return [h,m,s].map(n => String(n).padStart(2,'0')).join(':');
+}
+
+function renderCountdowns() {
+  const container = document.getElementById('platform-countdowns');
+  if (!container) return;
+  const now = new Date();
+
+  container.innerHTML = Object.entries(PLATFORM_POST_TIMES).map(([key, p]) => {
+    const next = getNextPostTime(p.hour, p.min);
+    const ms = next - now;
+    const isToday = next.getDate() === now.getDate();
+    const timeStr = p.hour.toString().padStart(2,'0') + ':' + p.min.toString().padStart(2,'0') + ' MT';
+    return `<div style="background:rgba(20,10,40,0.6);border:1px solid rgba(255,255,255,0.06);padding:20px;text-align:center">
+      <div style="font-size:16px;margin-bottom:4px">${p.icon}</div>
+      <div style="font-size:9px;letter-spacing:3px;color:${p.color};margin-bottom:8px">${p.label.toUpperCase()}</div>
+      <div id="countdown-${key}" style="font-size:18px;font-family:var(--font-mono);color:var(--white);margin-bottom:6px">${formatCountdown(ms)}</div>
+      <div style="font-size:9px;color:var(--white-dim)">${isToday ? 'Today' : 'Tomorrow'} · ${timeStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateCountdowns() {
+  const now = new Date();
+  Object.entries(PLATFORM_POST_TIMES).forEach(([key, p]) => {
+    const el = document.getElementById('countdown-' + key);
+    if (!el) return;
+    const next = getNextPostTime(p.hour, p.min);
+    el.textContent = formatCountdown(next - now);
+  });
+}
+
+// Start countdown ticker
+function initCountdowns() {
+  renderCountdowns();
+  if (!window._countdownInterval) {
+    window._countdownInterval = setInterval(updateCountdowns, 1000);
+  }
+}
 
 // ── QUEUE SYSTEM ──
 const PLATFORM_TAGS = {
@@ -2503,32 +2610,128 @@ function renderManualQueue() {
   const container = document.getElementById('manual-queue-list');
   if (!container) return;
   const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  
+
   if (queue.length === 0) {
     container.innerHTML = '<div class="empty"><div class="empty-text">No videos ready yet — generate a script, create in InVideo, then click Add to Queue</div></div>';
     return;
   }
-  
+
+  const platformColors = { youtube: '#FF0000', tiktok: '#00f2ea', instagram: '#E1306C', facebook: '#1877F2' };
+  const platformIcons = { youtube: '▶', tiktok: '♪', instagram: '◈', facebook: 'f' };
+
   container.innerHTML = queue.map((item, idx) => `
-    <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);padding:20px;margin-bottom:1px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div style="flex:1">
-          <div style="font-size:14px;margin-bottom:4px">${item.title}</div>
-          <div style="font-size:10px;color:var(--white-dim)">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path}</div>
+    <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);margin-bottom:2px">
+
+      <!-- Header -->
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+          <div>
+            <div style="font-size:14px;margin-bottom:4px">${item.title}</div>
+            <div style="font-size:10px;color:var(--white-dim)">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path}</div>
+          </div>
+          <button class="script-btn" style="font-size:9px;padding:4px 12px" onclick="removeQueueItem(${idx})">✕ Remove</button>
         </div>
-        <div style="display:flex;gap:8px;margin-left:16px">
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="postQueueItem(${idx})">Post Now</button>
-          <button class="script-btn" style="padding:8px 12px;font-size:10px" onclick="removeQueueItem(${idx})">Remove</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button onclick="generatePlatformCaptions(${idx})" style="background:linear-gradient(135deg,rgba(240,160,32,0.2),rgba(180,100,255,0.2));border:1px solid rgba(240,160,32,0.4);color:var(--gold);padding:10px 20px;font-size:10px;letter-spacing:3px;cursor:pointer;font-family:var(--font-main)">✦ GENERATE CAPTIONS</button>
+          <button onclick="postQueueItem(${idx})" style="background:rgba(255,0,0,0.1);border:1px solid rgba(255,0,0,0.3);color:#FF4444;padding:10px 20px;font-size:10px;letter-spacing:3px;cursor:pointer;font-family:var(--font-main)">▶ POST TO YOUTUBE</button>
         </div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${['youtube','tiktok','instagram','facebook'].map(p => `
-          <div style="background:rgba(240,160,32,0.08);border:1px solid rgba(240,160,32,0.2);padding:6px 12px;font-size:9px;letter-spacing:2px;color:var(--gold)">${p.toUpperCase()}</div>
-        `).join('')}
+
+      <!-- Platform Cards -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px">
+        ${['youtube','tiktok','instagram','facebook'].map(p => {
+          const captions = item.captions && item.captions[p];
+          return `<div style="padding:16px;background:rgba(20,10,40,0.4)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <div style="width:8px;height:8px;border-radius:50%;background:${platformColors[p]}"></div>
+              <div style="font-size:9px;letter-spacing:3px;color:var(--white-dim)">${p.toUpperCase()}</div>
+            </div>
+            ${captions ? `
+              <div style="font-size:11px;line-height:1.6;margin-bottom:8px;color:var(--white)">${captions.caption.substring(0,100)}...</div>
+              <div style="font-size:10px;color:var(--gold);margin-bottom:10px">${captions.tags.slice(0,3).join(' ')}</div>
+              <button class="script-btn" style="font-size:9px;padding:4px 10px;width:100%" onclick="copyCaptionForPlatform(${idx},'${p}')">Copy Caption</button>
+            ` : `
+              <div style="font-size:11px;color:var(--white-dim);line-height:1.6">Click Generate Captions to create platform-optimized caption and tags</div>
+            `}
+          </div>`;
+        }).join('')}
       </div>
+
+      <!-- Status -->
+      ${item.status === 'posted' ? `<div style="padding:12px 24px;font-size:10px;color:var(--success);letter-spacing:2px">✓ POSTED TO YOUTUBE${item.url ? ' · ' + item.url : ''}</div>` : ''}
     </div>
   `).join('');
 }
+
+async function generatePlatformCaptions(idx) {
+  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+  const item = queue[idx];
+  if (!item) return;
+
+  const antKey = state.settings.antKey;
+  const vpsUrl = state.settings.vpsUrl;
+  if (!antKey || !vpsUrl) { showToast('Add API keys in Settings'); return; }
+
+  showToast('Generating captions for all 4 platforms...');
+
+  try {
+    const res = await fetch(vpsUrl + '/generate-script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: 'Generate 4 platform-specific captions for this video: ' + item.title + '. Script: ' + (item.script || item.description || item.title),
+        platform: 'all',
+        key: antKey,
+        length: 200,
+        caption_mode: true
+      })
+    });
+    const data = await res.json();
+
+    // Parse captions from response
+    const script = data.script || '';
+    
+    queue[idx].captions = {
+      youtube: {
+        caption: extractSection(script, "YOUTUBE") || item.title + " | AI While You Sleeping. Watch to discover this AI tool that could change your workflow. Follow for daily AI reviews.",
+        tags: ["AItools", "shorts", "ChatGPT", "AI2026", "productivity", "tech", "artificialintelligence", "aiwhileyousleeping"]
+      },
+      tiktok: {
+        caption: extractSection(script, "TIKTOK") || "POV: You just found the AI tool everyone will be using in 2026",
+        tags: ["#AItools", "#fyp", "#foryou", "#ChatGPT", "#techtok", "#AIhacks", "#learnontiktok", "#AI2026"]
+      },
+      instagram: {
+        caption: extractSection(script, "INSTAGRAM") || "This AI tool just changed everything. Save this for later! Follow @aiwhileyousleeping for daily AI reviews",
+        tags: ["#AItools", "#artificialintelligence", "#techreview", "#productivityhacks", "#ChatGPT", "#AIreview", "#reels", "#instareels", "#AI2026", "#aiwhileyousleeping"]
+      },
+      facebook: {
+        caption: extractSection(script, "FACEBOOK") || "I tested this AI tool so you do not have to. Follow AI While You Sleeping for daily AI tool reviews that actually matter.",
+        tags: ["AItools", "technology", "ChatGPT", "productivity", "AI2026"]
+      }
+    };
+    localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
+    renderManualQueue();
+    showToast('Captions generated for all 4 platforms!');
+  } catch(e) {
+    showToast('Could not generate captions: ' + e.message);
+  }
+}
+
+function extractSection(text, platform) {
+  const regex = new RegExp(platform + '[:\s]+([\s\S]+?)(?=YOUTUBE|TIKTOK|INSTAGRAM|FACEBOOK|$)', 'i');
+  const match = text.match(regex);
+  return match ? match[1].trim().substring(0, 300) : null;
+}
+
+function copyCaptionForPlatform(idx, platform) {
+  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+  const item = queue[idx];
+  if (!item || !item.captions || !item.captions[platform]) return;
+  const c = item.captions[platform];
+  const text = c.caption + '\n\n' + c.tags.join(' ');
+  navigator.clipboard.writeText(text).then(() => showToast(platform.toUpperCase() + ' caption copied!'));
+}
+
 
 async function postQueueItem(idx) {
   const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
@@ -2792,6 +2995,54 @@ function setCheckActive(n) {
   if (badge) { badge.textContent = 'DO THIS'; badge.classList.add('active'); }
 }
 
+
+async function uploadVideoFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
+  
+  const statusEl = document.getElementById('upload-file-status');
+  const progressWrap = document.getElementById('file-upload-progress');
+  const progressFill = document.getElementById('file-upload-fill');
+  
+  if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '...';
+  if (progressWrap) progressWrap.style.display = 'block';
+  if (progressFill) progressFill.style.width = '10%';
+
+  try {
+    const formData = new FormData();
+    formData.append('video', file, 'video.mp4');
+
+    // Use XMLHttpRequest for upload progress
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && progressFill) {
+          progressFill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error('Upload failed: ' + xhr.status));
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.open('POST', vpsUrl + '/video/upload-file');
+      xhr.send(formData);
+    });
+
+    if (progressFill) progressFill.style.width = '100%';
+    if (statusEl) { statusEl.textContent = '✓ ' + file.name + ' uploaded successfully'; statusEl.style.color = 'var(--success)'; }
+    markStep3Done();
+    showToast('Video uploaded to server!');
+
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = 'Upload failed: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+    showToast('Upload failed: ' + e.message);
+  }
+}
+
 function updateScpCommand(filename) {
   const cmd = document.getElementById('scp-cmd-display');
   if (!cmd) return;
@@ -2803,6 +3054,54 @@ function updateScpCommand(filename) {
 }
 
 // ── INVIDEO UPLOAD WORKFLOW ──
+
+async function uploadVideoFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
+  
+  const statusEl = document.getElementById('upload-file-status');
+  const progressWrap = document.getElementById('file-upload-progress');
+  const progressFill = document.getElementById('file-upload-fill');
+  
+  if (statusEl) statusEl.textContent = 'Uploading ' + file.name + '...';
+  if (progressWrap) progressWrap.style.display = 'block';
+  if (progressFill) progressFill.style.width = '10%';
+
+  try {
+    const formData = new FormData();
+    formData.append('video', file, 'video.mp4');
+
+    // Use XMLHttpRequest for upload progress
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && progressFill) {
+          progressFill.style.width = Math.round((e.loaded / e.total) * 100) + '%';
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status === 200) resolve(JSON.parse(xhr.responseText));
+        else reject(new Error('Upload failed: ' + xhr.status));
+      };
+      xhr.onerror = () => reject(new Error('Network error'));
+      xhr.open('POST', vpsUrl + '/video/upload-file');
+      xhr.send(formData);
+    });
+
+    if (progressFill) progressFill.style.width = '100%';
+    if (statusEl) { statusEl.textContent = '✓ ' + file.name + ' uploaded successfully'; statusEl.style.color = 'var(--success)'; }
+    markStep3Done();
+    showToast('Video uploaded to server!');
+
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = 'Upload failed: ' + e.message; statusEl.style.color = 'var(--danger)'; }
+    showToast('Upload failed: ' + e.message);
+  }
+}
+
 function updateScpCommand(filename) {
   const cmd = document.getElementById('scp-command');
   if (!cmd) return;
@@ -3416,56 +3715,44 @@ function updateAnalyticsUI(data) {
 // ── GITHUB AUTO-DEPLOY ──
 async function deployToGitHub() {
   const token = state.settings.githubToken;
+  const vpsUrl = state.settings.vpsUrl;
   const repo = state.settings.githubRepo || 'qspencer-4/awys-dashboard';
   const filename = state.settings.githubFilename || 'awys-dashboard.html';
   const btn = document.getElementById('deploy-btn');
 
-  const resetBtn = () => {
+  const resetBtn = (text, color) => {
     if (btn) {
-      btn.textContent = 'DEPLOY';
-      btn.style.color = 'var(--gold)';
-      btn.style.borderColor = 'rgba(240,160,32,0.3)';
+      btn.textContent = text || 'DEPLOY';
+      btn.style.color = color || 'var(--gold)';
+      btn.style.borderColor = color ? 'rgba(107,175,138,0.4)' : 'rgba(240,160,32,0.3)';
       btn.disabled = false;
     }
   };
 
   if (!token) { showToast('Add GitHub token in Settings first'); showTab('settings'); return; }
+  if (!vpsUrl) { showToast('Add VPS URL in Settings first'); return; }
 
   if (btn) { btn.textContent = 'DEPLOYING...'; btn.disabled = true; }
-  const timer = setTimeout(() => { resetBtn(); showToast('Deploy timed out'); }, 20000);
+
+  // 20 second hard timeout
+  const timer = setTimeout(() => resetBtn(), 20000);
 
   try {
-    // Get file SHA
-    const getRes = await fetch('https://api.github.com/repos/' + repo + '/contents/' + filename, {
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json' },
-      signal: AbortSignal.timeout(8000)
+    // Ask VPS to deploy to GitHub — avoids blocking browser with large btoa encoding
+    const res = await fetch(vpsUrl + '/deploy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, repo, filename }),
+      signal: AbortSignal.timeout(18000)
     });
-    let sha = null;
-    if (getRes.ok) { const d = await getRes.json(); sha = d.sha; }
-
-    // Encode HTML
-    const html = document.documentElement.outerHTML;
-    const encoded = btoa(unescape(encodeURIComponent(html)));
-    const body = { message: 'Auto-deploy ' + new Date().toLocaleString(), content: encoded, branch: 'main' };
-    if (sha) body.sha = sha;
-
-    // Push
-    const pushRes = await fetch('https://api.github.com/repos/' + repo + '/contents/' + filename, {
-      method: 'PUT',
-      headers: { 'Authorization': 'token ' + token, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(15000)
-    });
-
     clearTimeout(timer);
-    const pushData = await pushRes.json();
-
-    if (pushRes.ok) {
+    const data = await res.json();
+    if (data.success) {
       showToast('Deployed! Live in ~60 seconds');
-      if (btn) { btn.textContent = '✓ DEPLOYED'; btn.style.color = 'var(--success)'; btn.style.borderColor = 'rgba(107,175,138,0.4)'; btn.disabled = false; }
-      setTimeout(resetBtn, 5000);
+      resetBtn('✓ DEPLOYED', 'var(--success)');
+      setTimeout(() => resetBtn(), 5000);
     } else {
-      showToast('Deploy failed: ' + (pushData.message || 'Unknown'));
+      showToast('Deploy failed: ' + (data.error || 'Unknown'));
       resetBtn();
     }
   } catch(e) {
@@ -3475,221 +3762,13 @@ async function deployToGitHub() {
   }
 }
 
-
-async function runHealthCheck() {
-  healthIssues = [];
-  const report = [];
-
-  // 1. Check for duplicate nav tabs
-  const navButtons = document.querySelectorAll('.nav-tab');
-  const navLabels = Array.from(navButtons).map(b => b.textContent.trim());
-  const navDupes = navLabels.filter((v, i, a) => a.indexOf(v) !== i);
-  if (navDupes.length > 0) {
-    healthIssues.push({type:'nav_dupe', desc:'Duplicate nav tabs: ' + navDupes.join(', '), fixable: true});
-    report.push({label:'Nav tabs', status:'err', msg:'Duplicate found: ' + navDupes.join(', ')});
-  } else {
-    report.push({label:'Nav tabs (' + navLabels.length + ')', status:'ok', msg:'No duplicates'});
-  }
-
-  // 2. Check all nav tabs have matching panels
-  const navOnclicks = Array.from(navButtons).map(b => b.getAttribute('onclick')?.match(/showTab\'(\w+)\'/)?.[1] || b.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/)?.[1]);
-  for (const tabId of navOnclicks) {
-    if (!tabId) continue;
-    const panel = document.getElementById('panel-' + tabId);
-    if (!panel) {
-      healthIssues.push({type:'missing_panel', desc:'Missing panel: panel-' + tabId, fixable: false});
-      report.push({label:'Panel: ' + tabId, status:'err', msg:'Panel not found in DOM'});
-    } else {
-      report.push({label:'Panel: ' + tabId, status:'ok', msg:'Found'});
-    }
-  }
-
-  // 3. Check required DOM elements
-  for (const el of REQUIRED_ELEMENTS) {
-    const found = document.getElementById(el.id);
-    if (!found) {
-      healthIssues.push({type:'missing_element', id: el.id, desc:'Missing element: ' + el.id, fixable: false});
-      report.push({label:el.desc, status:'err', msg:'#' + el.id + ' not found'});
-    } else {
-      report.push({label:el.desc, status:'ok', msg:'✓'});
-    }
-  }
-
-  // 4. Check settings are saved
-  const settings = JSON.parse(localStorage.getItem('awys-settings') || '{}');
-  if (!settings.vpsUrl) {
-    healthIssues.push({type:'no_vps', desc:'VPS URL not configured', fixable: false});
-    report.push({label:'VPS Backend URL', status:'warn', msg:'Not configured — add in Settings'});
-  } else {
-    report.push({label:'VPS Backend URL', status:'ok', msg:settings.vpsUrl});
-  }
-
-  if (!settings.antKey) {
-    healthIssues.push({type:'no_ant', desc:'Claude API key not configured', fixable: false});
-    report.push({label:'Claude API Key', status:'warn', msg:'Not configured — add in Settings'});
-  } else {
-    report.push({label:'Claude API Key', status:'ok', msg:'Configured'});
-  }
-
-  // 5. Check GitHub token
-  if (settings.githubToken) {
-    try {
-      const ghRes = await fetch('https://api.github.com/repos/' + (settings.githubRepo || 'qspencer-4/awys-dashboard'), {
-        headers: {
-          'Authorization': 'token ' + settings.githubToken,
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        signal: AbortSignal.timeout(5000)
-      });
-      const ghData = await ghRes.json();
-      if (ghRes.ok && ghData.permissions?.push) {
-        report.push({label:'GitHub Token', status:'ok', msg:'Valid — push access confirmed'});
-      } else if (ghRes.ok && !ghData.permissions?.push) {
-        healthIssues.push({type:'gh_no_push', desc:'GitHub token missing repo write permission', fixable: false});
-        report.push({label:'GitHub Token', status:'err', msg:'No write access — regenerate with repo scope'});
-      } else if (ghRes.status === 401) {
-        healthIssues.push({type:'gh_invalid', desc:'GitHub token invalid or expired', fixable: false});
-        report.push({label:'GitHub Token', status:'err', msg:'Invalid or expired — regenerate token'});
-      } else if (ghRes.status === 403) {
-        healthIssues.push({type:'gh_forbidden', desc:'GitHub token lacks repo permission', fixable: false});
-        report.push({label:'GitHub Token', status:'err', msg:'Permission denied — needs repo scope checked'});
-      } else {
-        report.push({label:'GitHub Token', status:'warn', msg:'Could not verify: ' + ghRes.status});
-      }
-    } catch(e) {
-      report.push({label:'GitHub Token', status:'warn', msg:'Could not verify — check internet'});
-    }
-  } else {
-    healthIssues.push({type:'no_gh_token', desc:'GitHub token not configured', fixable: false});
-    report.push({label:'GitHub Token', status:'warn', msg:'Not configured — add in Settings to enable auto-deploy'});
-  }
-
-  // 6. Check VPS connectivity
-  if (settings.vpsUrl) {
-    try {
-      const res = await fetch(settings.vpsUrl + '/health', {signal: AbortSignal.timeout(5000)});
-      const data = await res.json();
-      report.push({label:'VPS Server', status:'ok', msg:'Online v' + data.version});
-      if (!data.youtube_connected) {
-        healthIssues.push({type:'no_yt', desc:'YouTube not connected', fixable: false});
-        report.push({label:'YouTube OAuth', status:'warn', msg:'Not connected'});
-      } else {
-        report.push({label:'YouTube OAuth', status:'ok', msg:'Connected'});
-      }
-    } catch(e) {
-      healthIssues.push({type:'vps_down', desc:'VPS unreachable', fixable: false});
-      report.push({label:'VPS Server', status:'err', msg:'Unreachable — check Cloudflare tunnel'});
-    }
-  }
-
-  // 6. Check state integrity
-  if (!Array.isArray(state.trends)) {
-    healthIssues.push({type:'bad_state', desc:'state.trends corrupted', fixable: true});
-    report.push({label:'Trends state', status:'err', msg:'Corrupted — will reset'});
-  } else {
-    report.push({label:'Trends state', status:'ok', msg:state.trends.length + ' trends loaded'});
-  }
-
-  if (!Array.isArray(state.scripts)) {
-    healthIssues.push({type:'bad_scripts', desc:'state.scripts corrupted', fixable: true});
-    report.push({label:'Scripts state', status:'err', msg:'Corrupted — will reset'});
-  } else {
-    report.push({label:'Scripts state', status:'ok', msg:state.scripts.length + ' scripts'});
-  }
-
-  // Update health dot color
-  const dot = document.getElementById('health-dot');
-  if (dot) {
-    const errors = healthIssues.filter(i => !i.fixable || i.type === 'vps_down');
-    const warnings = healthIssues.filter(i => i.type === 'no_vps' || i.type === 'no_ant' || i.type === 'no_yt');
-    if (errors.length > 0) dot.style.background = '#F03C3C';
-    else if (warnings.length > 0) dot.style.background = '#F0A020';
-    else dot.style.background = '#6BAF8A';
-    dot.title = healthIssues.length === 0 ? 'All systems healthy' : healthIssues.length + ' issue(s) found';
-  }
-
-  renderHealthReport(report);
-  return healthIssues;
-}
-
-function renderHealthReport(report) {
-  const container = document.getElementById('health-report-content');
-  if (!container) return;
-
-  const errors = report.filter(r => r.status === 'err').length;
-  const warnings = report.filter(r => r.status === 'warn').length;
-
-  container.innerHTML =
-    '<div style="margin-bottom:20px;padding:12px;background:rgba(' +
-    (errors > 0 ? '240,60,60' : warnings > 0 ? '240,160,32' : '107,175,138') +
-    ',0.1);border:1px solid rgba(' +
-    (errors > 0 ? '240,60,60' : warnings > 0 ? '240,160,32' : '107,175,138') +
-    ',0.3)">' +
-    '<div style="font-size:12px">' +
-    (errors > 0 ? '⚠ ' + errors + ' error(s), ' + warnings + ' warning(s) found' :
-     warnings > 0 ? '● ' + warnings + ' warning(s) — app functional but needs attention' :
-     '✓ All systems healthy') +
-    '</div></div>' +
-    report.map(r => `
-      <div class="health-row">
-        <span style="color:var(--white-dim)">${r.label}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;color:var(--white-dim)">${r.msg}</span>
-          <span class="health-status health-${r.status}">${r.status.toUpperCase()}</span>
-        </div>
-      </div>
-    `).join('');
-}
-
-async function runSelfHealing() {
-  let fixed = 0;
-
-  for (const issue of healthIssues) {
-    if (issue.type === 'nav_dupe') {
-      // Remove duplicate nav tabs
-      const seen = new Set();
-      document.querySelectorAll('.nav-tab').forEach(btn => {
-        const label = btn.textContent.trim();
-        if (seen.has(label)) { btn.remove(); fixed++; }
-        else seen.add(label);
-      });
-    }
-    if (issue.type === 'bad_state') {
-      state.trends = []; fixed++;
-    }
-    if (issue.type === 'bad_scripts') {
-      state.scripts = []; fixed++;
-    }
-  }
-
-  showToast(fixed > 0 ? fixed + ' issue(s) auto-fixed' : 'No auto-fixable issues found');
-  await runHealthCheck();
-}
-
-function showHealthReport() {
-  document.getElementById('health-modal').classList.add('open');
-  runHealthCheck();
-}
-
-// Run health check on load and every 5 minutes
-async function initHealthCheck() {
-  await runHealthCheck();
-  setInterval(runHealthCheck, 5 * 60 * 1000);
-}
-
 // ── MODAL CLOSE ON OVERLAY ──
 document.getElementById('script-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
 // ── SERVICE WORKER ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/awys-dashboard/sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
-  });
-}
+// Service worker disabled
 
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', e => {
@@ -3713,1794 +3792,6 @@ window.addEventListener('beforeinstallprompt', e => {
       </div>
     </div>
   </div>
-</body>
-</htmlfunction renderScripts() {
-  const container = document.getElementById('scripts-container');
-  if (!container) return;
-  if (!state.scripts.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-text">Generated scripts will appear here</div></div>';
-    return;
-  }
-  container.innerHTML = state.scripts.map((s, i) => '<div class="script-card">' +
-    '<div class="script-header">' +
-    '<div><div class="script-topic">' + s.topic + '</div>' +
-    '<div class="script-meta">' + s.platform + ' · ' + new Date(s.generated_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</div></div>' +
-    '</div>' +
-    '<div class="script-preview">' + s.script.substring(0, 120) + '...</div>' +
-    '<div class="script-actions">' +
-    '<button class="script-btn" onclick="viewScript(' + i + ')">View</button>' +
-    '<button class="script-btn" style="color:var(--gold);border-color:rgba(240,160,32,0.4)" onclick="copyScriptForInVideo(' + i + ')">Copy for InVideo</button>' +
-    '<button class="script-btn" onclick="addScriptToQueue(' + i + ')">Add to Queue</button>' +
-    '</div></div>').join('');
-}
 
-
-
-// ── SETTINGS ──
-function loadSettings() {
-  const s = JSON.parse(localStorage.getItem('awys-settings') || '{}');
-  Object.assign(state.settings, s);
-  if (s.ytKey) document.getElementById('yt-key').value = s.ytKey;
-  if (s.antKey) document.getElementById('ant-key').value = s.antKey;
-  if (s.vpsUrl) document.getElementById('vps-url').value = s.vpsUrl;
-  if (s.scriptLen) document.getElementById('script-len').value = s.scriptLen;
-  if (s.refreshInterval) document.getElementById('refresh-interval').value = s.refreshInterval;
-  if (s.githubToken) { const el = document.getElementById('github-token'); if (el) el.value = s.githubToken; }
-  if (s.githubRepo) { const el = document.getElementById('github-repo'); if (el) el.value = s.githubRepo; }
-  if (s.githubFilename) { const el = document.getElementById('github-filename'); if (el) el.value = s.githubFilename; }
-  if (s.phoneNumber) { const el = document.getElementById('phone-number'); if (el) el.value = s.phoneNumber; }
-  if (s.gmailPassword) { const el = document.getElementById('gmail-password'); if (el) el.value = s.gmailPassword; }
-  if (s.ntfyTopic) { const el = document.getElementById('ntfy-topic'); if (el) el.value = s.ntfyTopic; }
-  if (s.scriptTime) { const el = document.getElementById('script-time'); if (el) el.value = s.scriptTime; }
-  if (s.ytPostTime) { const el = document.getElementById('yt-post-time'); if (el) el.value = s.ytPostTime; }
-  if (s.autopilotEnabled !== undefined) { const el = document.getElementById('autopilot-enabled'); if (el) el.value = s.autopilotEnabled ? 'true' : 'false'; }
-}
-
-function saveSettings() {
-  state.settings.ytKey = document.getElementById('yt-key').value.trim();
-  state.settings.githubToken = document.getElementById('github-token')?.value.trim() || '';
-  state.settings.githubRepo = document.getElementById('github-repo')?.value.trim() || 'qspencer-4/awys-dashboard';
-  state.settings.githubFilename = document.getElementById('github-filename')?.value.trim() || 'awys-dashboard.html';
-  state.settings.phoneNumber = document.getElementById('phone-number')?.value.trim() || '';
-  state.settings.gmailPassword = document.getElementById('gmail-password')?.value.trim() || '';
-  state.settings.ntfyTopic = document.getElementById('ntfy-topic')?.value.trim() || 'awys-quentin';
-  state.settings.scriptTime = document.getElementById('script-time')?.value || '09:00';
-  state.settings.ytPostTime = document.getElementById('yt-post-time')?.value || '12:00';
-  state.settings.autopilotEnabled = document.getElementById('autopilot-enabled')?.value === 'true';
-  state.settings.antKey = document.getElementById('ant-key').value.trim();
-  state.settings.vpsUrl = document.getElementById('vps-url').value.trim();
-  state.settings.scriptLen = parseInt(document.getElementById('script-len').value) || 150;
-  state.settings.refreshInterval = parseInt(document.getElementById('refresh-interval').value) || 30;
-  state.settings.githubToken = document.getElementById('github-token')?.value.trim() || '';
-  state.settings.githubRepo = document.getElementById('github-repo')?.value.trim() || 'qspencer-4/awys-dashboard';
-  state.settings.githubFilename = document.getElementById('github-filename')?.value.trim() || 'awys-dashboard.html';
-  state.settings.phoneNumber = document.getElementById('phone-number')?.value.trim() || '';
-  state.settings.gmailPassword = document.getElementById('gmail-password')?.value.trim() || '';
-  state.settings.ntfyTopic = document.getElementById('ntfy-topic')?.value.trim() || 'awys-quentin';
-  state.settings.scriptTime = document.getElementById('script-time')?.value || '09:00';
-  state.settings.ytPostTime = document.getElementById('yt-post-time')?.value || '12:00';
-  state.settings.autopilotEnabled = document.getElementById('autopilot-enabled')?.value === 'true';
-  localStorage.setItem('awys-settings', JSON.stringify(state.settings));
-  showToast('Settings saved');
-}
-
-// ── TRENDS ──
-async function loadTrends() {
-  document.getElementById('trends-container').innerHTML =
-    '<div class="empty"><div class="empty-text">Loading trends<span class="loading-dots"></span></div></div>';
-  const key = state.settings.ytKey;
-  if (!key) { showSampleTrends(); return; }
-
-  // Cache trends for 30 minutes to preserve YouTube quota
-  const cacheKey = 'awys-trends-cache';
-  const cacheTime = 'awys-trends-time';
-  const cached = localStorage.getItem(cacheKey);
-  const cachedAt = parseInt(localStorage.getItem(cacheTime) || '0');
-  const thirtyMin = 30 * 60 * 1000;
-  if (cached && Date.now() - cachedAt < thirtyMin) {
-    state.trends = JSON.parse(cached);
-    document.getElementById('stat-topics').textContent = state.trends.length;
-    document.getElementById('stat-yt').textContent = state.trends.length;
-    document.getElementById('stat-gt').textContent = '10';
-    renderTrends();
-    showToast('Trends loaded from cache — refreshes every 30 min');
-    return;
-  }
-  try {
-    const queries = ['AI tools 2026','ChatGPT tips','AI productivity'];
-    const allItems = [];
-    for (const q of queries) {
-      const r = await fetch('https://www.googleapis.com/youtube/v3/search?part=snippet&q=' + encodeURIComponent(q) + '&type=video&order=viewCount&maxResults=4&regionCode=US&key=' + key);
-      const d = await r.json();
-      if (d.error && d.error.code === 403) {
-        // Quota exceeded — use sample trends
-        showSampleTrends();
-        showToast('YouTube quota reset at midnight — showing curated trends');
-        return;
-      }
-      if (d.items) d.items.forEach(item => allItems.push({
-        id: item.id.videoId, title: item.snippet.title, channel: item.snippet.channelTitle,
-        views: Math.floor(Math.random() * 2000000) + 100000, platform: 'YouTube', hot: true
-      }));
-    }
-    if (allItems.length === 0) { showSampleTrends(); return; }
-    state.trends = allItems.slice(0, 12);
-    localStorage.setItem('awys-trends-cache', JSON.stringify(state.trends));
-    localStorage.setItem('awys-trends-time', Date.now().toString());
-    document.getElementById('stat-topics').textContent = state.trends.length;
-    document.getElementById('stat-yt').textContent = state.trends.length;
-    document.getElementById('stat-gt').textContent = '10';
-    renderTrends();
-  } catch(e) { showSampleTrends(); }
-}
-
-function showSampleTrends() {
-  state.trends = [
-    { title: 'I tested every AI writing tool — honest results', platform: 'YouTube', views: 2400000, hot: true },
-    { title: 'This AI tool saved me 10 hours this week', platform: 'YouTube', views: 1800000, hot: true },
-    { title: 'ChatGPT vs Claude — which is actually better in 2026', platform: 'YouTube', views: 3100000, hot: true },
-    { title: '5 AI tools that pay for themselves', platform: 'Google Trends', views: 900000, hot: true },
-    { title: 'The AI tool nobody is talking about', platform: 'YouTube', views: 2200000, hot: true },
-    { title: 'I used AI to run my entire business for a week', platform: 'Google Trends', views: 1600000, hot: true },
-    { title: 'Best free AI tools in 2026', platform: 'YouTube', views: 1100000, hot: false },
-    { title: 'How to make money with AI tools', platform: 'Google Trends', views: 780000, hot: false },
-    { title: 'This AI writes better than me — full review', platform: 'YouTube', views: 2900000, hot: true },
-    { title: 'AI tools for content creators — full breakdown', platform: 'Google Trends', views: 1400000, hot: true },
-    { title: 'Midjourney vs DALL-E vs Stable Diffusion 2026', platform: 'YouTube', views: 1900000, hot: true },
-    { title: 'I automated my entire workflow with AI', platform: 'Google Trends', views: 1200000, hot: false },
-  ];
-  document.getElementById('stat-topics').textContent = state.trends.length;
-  document.getElementById('stat-yt').textContent = '6';
-  document.getElementById('stat-gt').textContent = '6';
-  renderTrends();
-}
-
-function renderTrends() {
-  const container = document.getElementById('trends-container');
-  if (!container) return;
-  if (!state.trends.length) {
-    container.innerHTML = '<div class="empty"><div class="empty-text">No trends found — hit Refresh Trends</div></div>';
-    return;
-  }
-  container.innerHTML = '<div class="trends-grid">' + state.trends.map((t, i) => '<div class="trend-card">' +
-    '<div class="trend-header"><span class="trend-platform">' + t.platform + '</span>' +
-    (t.hot ? '<span class="trend-badge hot">HOT</span>' : '') + '</div>' +
-    '<div class="trend-title">' + t.title + '</div>' +
-    '<div class="trend-meta">' + formatNum(t.views) + ' views</div>' +
-    '<div class="trend-actions"><button class="trend-btn" onclick="useTrend(' + i + ')">Use This &rarr;</button></div>' +
-    '</div>').join('') + '</div>';
-}
-
-function useTrend(i) {
-  const trend = state.trends[i];
-  if (!trend) return;
-  const el = document.getElementById('script-topic');
-  if (el) {
-    el.value = trend.title;
-    // Scroll to generate box
-    const box = document.querySelector('.generate-box');
-    if (box) box.scrollIntoView({behavior:'smooth', block:'center'});
-    showToast('Topic selected — hit Generate Script');
-  }
-}
-
-function formatNum(n) {
-  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n/1000).toFixed(0) + 'K';
-  return n.toString();
-}
-
-// ── SCRIPTS ──
-function prefillScript(topic) {
-  showTab('trends');
-  document.getElementById('script-topic').value = topic;
-  document.getElementById('script-topic').focus();
-}
-
-document.querySelectorAll('.chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-  });
-});
-
-async function generateScript() {
-  const topic = (document.getElementById('script-topic')?.value || '').trim();
-  const platform = (document.getElementById('script-platform')?.value) || 'youtube';
-  const length = parseInt(document.getElementById('script-length')?.value || '150');
-  const vpsUrl = state.settings.vpsUrl;
-  const antKey = state.settings.antKey;
-
-  if (!topic) { showToast('Enter a topic or click a trend first'); return; }
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
-  if (!antKey) { showToast('Add Claude API key in Settings'); return; }
-
-  const btn = document.getElementById('gen-script-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
-  const indicator = document.getElementById('script-generating');
-  if (indicator) indicator.style.display = 'block';
-
-  try {
-    const res = await fetch(vpsUrl + '/generate-script', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, platform, key: antKey, length })
-    });
-    const data = await res.json();
-    if (data.error) { showToast('Error: ' + data.error); return; }
-
-    const scriptObj = {
-      id: Date.now(),
-      topic,
-      platform,
-      script: data.script,
-      generated_at: new Date().toISOString()
-    };
-
-    state.scripts.unshift(scriptObj);
-    state.scriptCount = state.scripts.length;
-    const ssEl = document.getElementById('stat-scripts');
-    if (ssEl) ssEl.textContent = state.scripts.length;
-    renderScripts();
-    autoFillFromScript(scriptObj.script);
-    markStep1Done();
-    showToast('Script generated!');
-
-    // Scroll to show the script
-    const sc = document.getElementById('scripts-container');
-    if (sc) sc.scrollIntoView({behavior:'smooth', block:'start'});
-
-  } catch(e) {
-    showToast('Cannot reach VPS — check Settings');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Generate Script'; }
-    if (indicator) indicator.style.display = 'none';
-  }
-}
-
-
-async function loadAnalytics() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
-
-  // Build chart labels based on actual local device day
-  const today = new Date();
-  const dayLabels = ['S','M','T','W','T','F','S'];
-  const todayIdx = today.getDay(); // 0=Sun, 1=Mon... 6=Sat
-  const labels = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(today.getDate() - i);
-    labels.push(dayLabels[d.getDay()]);
-  }
-  const labelContainer = document.getElementById('chart-labels');
-  if (labelContainer) {
-    labelContainer.innerHTML = labels.map(l => '<div class="chart-label">' + l + '</div>').join('');
-  }
-
-  // Mark today's bar as active
-  const bars = document.querySelectorAll('#chart-views .bar');
-  bars.forEach((b, i) => {
-    b.classList.remove('active');
-    if (i === 6) b.classList.add('active');
-  });
-
-  // Update last synced time
-  const syncEl = document.getElementById('a-synced');
-  if (syncEl) syncEl.textContent = today.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-
-  // Fetch YouTube channel stats from VPS
-  try {
-    const res = await fetch(vpsUrl + '/youtube/channel');
-    const data = await res.json();
-
-    if (data.name) {
-      // Update all analytics fields
-      const subs = data.subscribers || 0;
-      const views = data.views || 0;
-      const videos = data.videos || 0;
-
-      document.getElementById('a-views').textContent = formatNum(views);
-      document.getElementById('a-followers').textContent = formatNum(subs);
-      document.getElementById('a-posts').textContent = videos;
-      document.getElementById('yt-views-label').textContent = formatNum(views) + ' views';
-      document.getElementById('yt-name').textContent = data.name;
-      document.getElementById('yt-total-views').textContent = formatNum(views);
-      document.getElementById('yt-total-subs').textContent = formatNum(subs);
-      document.getElementById('yt-total-videos').textContent = videos;
-
-      // Update milestones
-      document.getElementById('ms-500').textContent = subs + ' / 500';
-      document.getElementById('ms-1000').textContent = subs + ' / 1,000';
-      document.getElementById('ms-4000').textContent = '0 / 4,000';
-
-      const monetizeEl = document.getElementById('ms-monetize');
-      if (subs >= 1000) {
-        monetizeEl.textContent = 'Eligible';
-        monetizeEl.className = 'analytics-val up';
-      } else {
-        monetizeEl.textContent = 'Not eligible yet';
-        monetizeEl.className = 'analytics-val down';
-      }
-
-      document.getElementById('a-views-delta').textContent = views > 0 ? '↑ Growing' : '↑ Getting started';
-      document.getElementById('a-subs-delta').textContent = subs > 0 ? '↑ Growing' : '↑ Getting started';
-
-      showToast('Analytics synced from YouTube');
-    }
-  } catch(e) {
-    if (e.message && e.message.includes('quota')) {
-      showToast('YouTube quota exceeded — resets at midnight Pacific');
-    } else {
-      showToast('Could not sync — check VPS connection');
-    }
-  }
-}
-
-// ── TOAST ──
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
-}
-
-// ── CALENDAR ──
-const CAL_DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const CAL_FORMATS = ['Tutorial','Review','Comparison','List','Story','News','Tutorial'];
-
-const TRENDING_HASHTAGS = {
-  youtube: ['#AItools', '#shorts', '#ChatGPT', '#artificialintelligence', '#tech', '#productivity', '#AIreview', '#learnAI', '#futuretech', '#AItutorial'],
-  tiktok: ['#AItools', '#fyp', '#foryou', '#ChatGPT', '#techtok', '#AIhacks', '#productivity', '#learnontiktok', '#techreviews', '#AIlife'],
-  instagram: ['#AItools', '#artificialintelligence', '#techreview', '#productivityhacks', '#ChatGPT', '#AIreview', '#techinspiration', '#digitaltools', '#futureofwork', '#AIcreator'],
-  facebook: ['#AItools', '#technology', '#ChatGPT', '#productivity', '#techreview', '#artificialintelligence', '#digitallife', '#AIhacks']
-};
-
-async function generateCalendar() {
-  const antKey = state.settings.antKey;
-  const vpsUrl = state.settings.vpsUrl;
-  if (!antKey || !vpsUrl) { showToast('Add API keys in Settings first'); return; }
-
-  const btn = document.getElementById('cal-gen-btn');
-  btn.textContent = 'Generating...'; btn.disabled = true;
-
-  const sunday = new Date();
-  const dow = sunday.getDay();
-  sunday.setDate(sunday.getDate() + (dow === 0 ? 0 : 7 - dow));
-
-  document.getElementById('calendar-container').innerHTML =
-    '<div class="cal-loading">' + Array(7).fill('<div class="cal-skeleton"></div>').join('') + '</div>';
-
-  // Pull current trending topics to inform calendar
-  const trendingTopics = state.trends.slice(0, 5).map(t => t.title).join(', ');
-  const hasTrends = trendingTopics.length > 0;
-
-  const days = [];
-
-  for (let i = 0; i < 7; i++) {
-    const date = new Date(sunday);
-    date.setDate(sunday.getDate() + i);
-    const dayName = CAL_DAYS[i];
-    const format = CAL_FORMATS[i];
-
-    // Pick 3 relevant hashtags from trending pool
-    const hashPool = TRENDING_HASHTAGS.youtube;
-    const selectedTags = [hashPool[i % hashPool.length], hashPool[(i+2) % hashPool.length], hashPool[(i+4) % hashPool.length]].join(' ');
-
-    try {
-      // Balanced content framework — 4 types rotating through the week
-      const contentTypes = [
-        { type: 'Trending AI News',    angle: 'Cover a recent AI tool launch or update that everyday people should know about. Make it feel like breaking news they cant afford to miss.' },
-        { type: 'Tool Review',         angle: 'Review a specific AI tool you tested personally. Give an honest verdict. Beginners want to know: is it actually worth it?' },
-        { type: 'Beginner Tutorial',   angle: 'Teach one specific thing ChatGPT or another popular AI tool can do that most people dont know. The wow moment is everything.' },
-        { type: 'Money & Productivity',angle: 'Show how a specific AI tool saves time or makes money for regular people. Concrete numbers and real use cases only.' },
-        { type: 'Tool Comparison',     angle: 'Compare two popular AI tools head to head. Help beginners decide which one is actually worth their time.' },
-        { type: 'Trending AI News',    angle: 'What is the most talked about AI development this week? Break it down simply so anyone can understand why it matters.' },
-        { type: 'Beginner Tutorial',   angle: 'One simple AI trick or feature that changes how someone does something they do every day — writing, planning, creating, communicating.' }
-      ];
-
-      const ct = contentTypes[i];
-
-      // Pull AI-specific trends — named tools only
-      const aiTrends = state.trends.filter(t =>
-        /\b(ChatGPT|Claude|Gemini|Copilot|Midjourney|Runway|Sora|Pika|ElevenLabs|Jasper|Writesonic|GPT|Perplexity|Grok|Llama|AI tool|AI video|AI image|AI writing|AI voice|AI music|AI coding|AI automation|AI agent)\b/i.test(t.title)
-      ).slice(0, 3).map(t => t.title).join(', ');
-
-      // Curated evergreen AI topics by content type
-      const evergreenByType = {
-        'Trending AI News':     'GPT-5 release features, Google Gemini Ultra updates, OpenAI new products 2026',
-        'Tool Review':          'Runway Gen-3 video generation, ElevenLabs voice cloning, Midjourney v7, Perplexity AI search',
-        'Beginner Tutorial':    'ChatGPT prompt tricks, Claude document analysis, AI email writing, AI meeting summaries',
-        'Money & Productivity': 'AI freelancing tools, automating social media with AI, AI for small business owners',
-        'Tool Comparison':      'ChatGPT vs Claude vs Gemini, Midjourney vs DALL-E, Jasper vs Writesonic'
-      };
-
-      const topicPool = aiTrends.length > 0 ? aiTrends : evergreenByType[ct.type] || evergreenByType['Beginner Tutorial'];
-
-      const trendContext = 'Content type for today: ' + ct.type + '. Angle: ' + ct.angle + ' Topic pool to draw from: ' + topicPool + '.';
-
-      const res = await fetch(vpsUrl + '/generate-script', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic: 'You are creating a weekly content calendar for AI While You Sleeping — an AI channel for curious everyday beginners in 2026. Generate ONE video idea. ' + trendContext + ' TARGET VIEWER: Curious everyday person who uses ChatGPT occasionally but wants to know more. They respond to content that feels relevant, surprising, and immediately useful. TITLE RULES: Be specific to a real AI tool. Create genuine curiosity. Sound like something a real person would say. No jargon. No generic phrases like "AI tools tip" or "AI hacks". Good examples: "This AI wrote my entire business plan in 4 minutes", "ChatGPT just got a feature that changes everything", "I replaced my graphic designer with this free AI tool". Respond ONLY in this exact format with real filled-in content: TITLE: [specific title] HOOK: [opening line under 10 words] AFFILIATE: [real AI tool name or None] TRENDING_ANGLE: [one sentence why this matters to regular people today]',
-          platform: 'youtube', key: antKey, length: 80
-        })
-      });
-      const data = await res.json();
-      const text = data.script || '';
-      const get = (k) => { const m = text.match(new RegExp(k + '[:\s]+([^\n]+)', 'i')); return m ? m[1].replace(/^\[|\]$/g,'').trim() : ''; };
-
-      // Generate platform-specific trending hashtags
-      const affiliate = get('AFFILIATE') || 'None';
-      const trendAngle = get('TRENDING_ANGLE') || '';
-
-      days.push({
-        day: dayName,
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        title: get('TITLE') || '',
-        hook: get('HOOK') || '',
-        format: format,
-        affiliate: affiliate,
-        trendAngle: trendAngle,
-        tags: selectedTags,
-        trendScore: hasTrends ? Math.floor(Math.random() * 30) + 70 : Math.floor(Math.random() * 20) + 50
-      });
-    } catch(e) {
-      days.push({ day: dayName, date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Connection error — retry', hook: '', format: format, affiliate: 'None', trendAngle: '', tags: selectedTags, trendScore: 0 });
-    }
-    renderCalendarDays(days, sunday);
-  }
-  btn.textContent = 'Regenerate Week'; btn.disabled = false;
-  showToast('Calendar generated from ' + (hasTrends ? 'live trends' : 'niche DNA'));
-}
-
-function renderCalendarDays(days, sunday) {
-  const full = [...days];
-  const base = sunday || new Date();
-  while (full.length < 7) {
-    const i = full.length;
-    const d = new Date(base); d.setDate(base.getDate() + i);
-    full.push({ day: CAL_DAYS[i], date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), title: 'Generating...', hook: '', format: CAL_FORMATS[i], affiliate: '', trendAngle: '', tags: '', trendScore: 0 });
-  }
-  document.getElementById('calendar-container').innerHTML = '<div class="calendar-grid">' +
-    full.map(function(d) {
-      const scoreColor = d.trendScore >= 80 ? 'var(--gold)' : d.trendScore >= 60 ? 'var(--white-dim)' : 'var(--white-dim)';
-      return '<div class="cal-day">' +
-        '<div class="cal-day-header">' +
-          '<div class="cal-day-name">' + d.day + '</div>' +
-          '<div style="display:flex;align-items:center;gap:8px">' +
-            (d.trendScore > 0 ? '<span style="font-family:var(--font-mono);font-size:9px;color:' + scoreColor + '">' + d.trendScore + '% TREND</span>' : '') +
-            '<div class="cal-day-num">' + d.date + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="cal-title">' + d.title + '</div>' +
-        (d.hook ? '<div class="cal-hook">"' + d.hook + '"</div>' : '') +
-        (d.trendAngle ? '<div style="font-size:10px;color:var(--gold);opacity:0.7;margin-bottom:10px;line-height:1.5">' + d.trendAngle + '</div>' : '') +
-        '<div class="cal-meta">' +
-          (d.contentType ? '<span class="cal-tag" style="border-color:rgba(201,160,32,0.5);color:var(--gold)">' + d.contentType + '</span>' : '') +
-          (d.affiliate && d.affiliate.toLowerCase() !== 'none' ? '<span class="cal-tag affiliate">' + d.affiliate + '</span>' : '') +
-        '</div>' +
-        '<div style="font-size:11px;color:var(--white-dim);margin-bottom:14px">' + d.tags + '</div>' +
-        '<div class="cal-actions"><button class="cal-btn" onclick="scriptFromCalendar(this.dataset.title)" data-title="' + d.title.replace(/"/g,'&quot;') + '">Write Script &#8594;</button></div>' +
-        '</div>';
-    }).join('') + '</div>';
-}
-
-function scriptFromCalendar(title) {
-  showTab('trends');
-  document.getElementById('script-topic').value = title;
-  showToast('Topic loaded — hit Generate');
-}
-
-// ── YOUTUBE CONNECTION ──
-async function connectYouTube() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
-  showToast('Opening YouTube authorization...');
-  window.open(vpsUrl + '/oauth/youtube', '_blank', 'width=600,height=700');
-  setTimeout(() => checkYouTubeStatus(), 10000);
-}
-
-async function checkYouTubeStatus() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) return;
-  try {
-    const res = await fetch(vpsUrl + '/oauth/status');
-    const data = await res.json();
-    const statusEl = document.getElementById('yt-status');
-    if (data.youtube_connected) {
-      if (statusEl) statusEl.innerHTML = '<div class="status-dot"></div> Connected';
-      showToast('YouTube connected successfully');
-      loadYouTubeStats();
-    }
-  } catch(e) {}
-}
-
-async function loadYouTubeStats() {
-  const vpsUrl = state.settings.vpsUrl;
-  const ytKey = state.settings.ytKey;
-  if (!vpsUrl || !ytKey) return;
-  try {
-    const res = await fetch(vpsUrl + '/youtube/channel?key=' + ytKey);
-    const data = await res.json();
-    if (data.subscribers !== undefined) {
-      document.getElementById('yt-subs').textContent = formatNum(data.subscribers);
-      document.getElementById('yt-videos').textContent = formatNum(data.videos);
-    }
-  } catch(e) {}
-}
-
-
-
-
-
-
-// ── QUEUE SYSTEM ──
-const PLATFORM_TAGS = {
-  youtube: ['AI tools', 'ChatGPT', 'artificial intelligence', 'AI tutorial', 'productivity', 'shorts', 'tech 2026', 'AI hacks', 'Claude AI', 'AI for beginners'],
-  tiktok: ['AItools', 'fyp', 'foryou', 'ChatGPT', 'techtok', 'AIhacks', 'learnontiktok', 'tech', 'artificialintelligence', 'AI2026'],
-  instagram: ['AItools', 'artificialintelligence', 'techreview', 'productivityhacks', 'ChatGPT', 'AIreview', 'reels', 'instareels', 'techinfluencer', 'AI2026'],
-  facebook: ['AItools', 'technology', 'ChatGPT', 'productivity', 'techreview', 'artificialintelligence', 'AIhacks', 'digitaltools', 'techlife', 'AI2026']
-};
-
-const CONTENT_TYPES = ['Trending AI News', 'Tool Review', 'Beginner Tutorial', 'Money & Productivity', 'Tool Comparison', 'Trending AI News', 'Tutorial'];
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-function getWeekDates() {
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
-    days.push(d);
-  }
-  return days;
-}
-
-function extractMetaFromScript(script) {
-  if (!script) return { title: '', description: '', tags: [] };
-  
-  // Extract HOOK for title
-  const hookMatch = script.match(/HOOK:\s*(.+)/i);
-  const hook = hookMatch ? hookMatch[1].trim().replace(/\*+/g, '') : '';
-  
-  // Extract main script body for description  
-  const scriptMatch = script.match(/SCRIPT:\s*([\s\S]+?)(?:CTA:|INVIDEO|TAGS:|$)/i);
-  const scriptBody = scriptMatch ? scriptMatch[1].trim().substring(0, 200) : '';
-  
-  // Extract tags
-  const tagsMatch = script.match(/TAGS:\s*(.+)/i);
-  const tagsStr = tagsMatch ? tagsMatch[1] : '';
-  const tags = tagsStr.split(/\s+/).filter(t => t.startsWith('#')).map(t => t.replace('#', ''));
-  
-  const title = hook || script.substring(0, 80);
-  const description = scriptBody || script.substring(0, 200);
-  
-  return { title, description, tags: tags.length > 0 ? tags : PLATFORM_TAGS.youtube };
-}
-
-function buildPlatformMetadata(title, description, tags) {
-  return {
-    youtube: {
-      title: title.substring(0, 100),
-      description: description + '\n\nFollow @AIWhileYouSleeping for daily AI tool reviews.\n\n' + tags.map(t => '#' + t).join(' '),
-      tags: tags.concat(['shorts', 'AI2026']).slice(0, 15)
-    },
-    tiktok: {
-      title: title.substring(0, 80),
-      description: tags.map(t => '#' + t).join(' ') + ' #fyp #foryou',
-      tags: PLATFORM_TAGS.tiktok
-    },
-    instagram: {
-      title: title.substring(0, 80),
-      description: description.substring(0, 150) + '...\n\n' + PLATFORM_TAGS.instagram.map(t => '#' + t).join(' '),
-      tags: PLATFORM_TAGS.instagram
-    },
-    facebook: {
-      title: title.substring(0, 100),
-      description: description + '\n\nFollow AI While You Sleeping for daily AI tool reviews!\n\n' + PLATFORM_TAGS.facebook.map(t => '#' + t).join(' '),
-      tags: PLATFORM_TAGS.facebook
-    }
-  };
-}
-
-// Auto-fill upload form from last generated script
-function autoFillFromScript(script) {
-  const meta = extractMetaFromScript(script);
-  const titleEl = document.getElementById('upload-title');
-  const descEl = document.getElementById('upload-description');
-  const tagsEl = document.getElementById('upload-tags');
-  if (titleEl && !titleEl.value) titleEl.value = meta.title;
-  if (descEl && !descEl.value) descEl.value = meta.description;
-  if (tagsEl && !tagsEl.value) tagsEl.value = meta.tags.join(', ');
-}
-
-function addToManualQueue() {
-  const title = document.getElementById('upload-title').value.trim();
-  const description = document.getElementById('upload-description').value.trim();
-  const tagsStr = document.getElementById('upload-tags').value.trim();
-  const videoPath = document.getElementById('upload-path').value.trim();
-  
-  if (!title) { showToast('Add a title first'); return; }
-  
-  const tags = tagsStr.split(',').map(t => t.trim()).filter(Boolean);
-  const platforms = buildPlatformMetadata(title, description, tags);
-  
-  const item = {
-    id: Date.now(),
-    title,
-    description,
-    tags,
-    video_path: videoPath,
-    platforms,
-    status: 'ready',
-    created_at: new Date().toISOString(),
-    type: 'manual'
-  };
-  
-  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  queue.unshift(item);
-  localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-  
-  showToast('Added to Queue!');
-  renderManualQueue();
-  showTab('queue');
-}
-
-function renderManualQueue() {
-  const container = document.getElementById('manual-queue-list');
-  if (!container) return;
-  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  
-  if (queue.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="empty-text">No videos ready yet — generate a script, create in InVideo, then click Add to Queue</div></div>';
-    return;
-  }
-  
-  container.innerHTML = queue.map((item, idx) => `
-    <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);padding:20px;margin-bottom:1px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div style="flex:1">
-          <div style="font-size:14px;margin-bottom:4px">${item.title}</div>
-          <div style="font-size:10px;color:var(--white-dim)">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path}</div>
-        </div>
-        <div style="display:flex;gap:8px;margin-left:16px">
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="postQueueItem(${idx})">Post Now</button>
-          <button class="script-btn" style="padding:8px 12px;font-size:10px" onclick="removeQueueItem(${idx})">Remove</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${['youtube','tiktok','instagram','facebook'].map(p => `
-          <div style="background:rgba(240,160,32,0.08);border:1px solid rgba(240,160,32,0.2);padding:6px 12px;font-size:9px;letter-spacing:2px;color:var(--gold)">${p.toUpperCase()}</div>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-}
-
-async function postQueueItem(idx) {
-  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  const item = queue[idx];
-  if (!item) return;
-  
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) { showToast('Add VPS URL in Settings'); return; }
-  
-  showToast('Uploading to YouTube...');
-  
-  try {
-    const res = await fetch(vpsUrl + '/youtube/upload-direct', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: item.platforms.youtube.title,
-        description: item.platforms.youtube.description,
-        tags: item.platforms.youtube.tags,
-        video_path: item.video_path,
-        privacy: 'public'
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      queue[idx].status = 'posted';
-      queue[idx].url = data.url;
-      localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-      showToast('Live on YouTube: ' + data.url);
-      renderManualQueue();
-      loadAnalytics();
-    } else {
-      showToast(data.error && data.error.includes('quota') ? 'Quota exceeded — try after midnight' : 'Upload failed: ' + data.error);
-    }
-  } catch(e) {
-    showToast('Cannot reach VPS');
-  }
-}
-
-function removeQueueItem(idx) {
-  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  queue.splice(idx, 1);
-  localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-  renderManualQueue();
-}
-
-// ── WEEKLY AUTOMATED QUEUE ──
-function renderWeeklyQueue() {
-  const grid = document.getElementById('weekly-queue-grid');
-  const rangeEl = document.getElementById('week-range');
-  if (!grid) return;
-  
-  const days = getWeekDates();
-  const today = new Date();
-  const weeklyPlan = JSON.parse(localStorage.getItem('awys-weekly-plan') || '{}');
-  
-  if (rangeEl) {
-    rangeEl.textContent = days[0].toLocaleDateString('en-US', {month:'short',day:'numeric'}) + ' — ' + days[6].toLocaleDateString('en-US', {month:'short',day:'numeric'});
-  }
-  
-  grid.innerHTML = days.map((day, i) => {
-    const dateKey = day.toISOString().split('T')[0];
-    const plan = weeklyPlan[dateKey] || {};
-    const isToday = day.toDateString() === today.toDateString();
-    const isPast = day < today && !isToday;
-    const contentType = CONTENT_TYPES[i];
-    
-    return `
-      <div style="background:${isToday ? 'rgba(240,160,32,0.08)' : 'rgba(30,15,50,0.35)'};border:1px solid ${isToday ? 'rgba(240,160,32,0.4)' : 'rgba(240,160,32,0.1)'};padding:16px;min-height:180px">
-        <div style="font-size:9px;letter-spacing:3px;color:${isToday ? 'var(--gold)' : 'var(--white-dim)'};margin-bottom:4px">${DAY_NAMES[i].toUpperCase()}</div>
-        <div style="font-size:10px;color:var(--white-dim);margin-bottom:12px">${day.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
-        <div style="font-size:9px;color:var(--gold);margin-bottom:8px;letter-spacing:2px">${contentType.toUpperCase()}</div>
-        ${plan.title ? `
-          <div style="font-size:11px;line-height:1.5;margin-bottom:12px;color:${isPast ? 'var(--white-dim)' : 'var(--white)'}">${plan.title}</div>
-          <div style="font-size:9px;letter-spacing:2px;color:${plan.status === 'posted' ? 'var(--success)' : plan.status === 'ready' ? 'var(--gold)' : 'var(--white-dim)'}">
-            ${plan.status === 'posted' ? '✓ POSTED' : plan.status === 'ready' ? '● READY' : '○ PENDING'}
-          </div>
-        ` : `
-          <div style="font-size:10px;color:var(--white-dim);line-height:1.5">Waiting for script...</div>
-          ${isToday ? '<button class="script-btn" style="margin-top:8px;font-size:9px" onclick="generateTodayScript()">Generate Now</button>' : ''}
-        `}
-      </div>
-    `;
-  }).join('');
-}
-
-async function generateWeeklyPlan() {
-  showToast('Generating weekly content plan...');
-  const vpsUrl = state.settings.vpsUrl;
-  const antKey = state.settings.antKey;
-  if (!vpsUrl || !antKey) { showToast('Add VPS URL and Claude API key in Settings'); return; }
-  
-  const days = getWeekDates();
-  const weeklyPlan = JSON.parse(localStorage.getItem('awys-weekly-plan') || '{}');
-  
-  const topics = [
-    'Most viral AI tool this week',
-    'AI tool review that saves 5 hours',
-    'Beginner AI tutorial step by step',
-    'AI tools that make you money in 2026',
-    'ChatGPT vs Claude vs Gemini comparison',
-    'Breaking AI news this week',
-    'AI productivity hack most people miss'
-  ];
-  
-  for (let i = 0; i < 7; i++) {
-    const dateKey = days[i].toISOString().split('T')[0];
-    if (!weeklyPlan[dateKey]) {
-      weeklyPlan[dateKey] = {
-        title: topics[i],
-        content_type: CONTENT_TYPES[i],
-        status: 'pending',
-        date: dateKey
-      };
-    }
-  }
-  
-  localStorage.setItem('awys-weekly-plan', JSON.stringify(weeklyPlan));
-  renderWeeklyQueue();
-  showToast('Weekly plan ready — scripts generate daily at 9 AM');
-}
-
-async function generateTodayScript() {
-  const vpsUrl = state.settings.vpsUrl;
-  const antKey = state.settings.antKey;
-  if (!vpsUrl || !antKey) { showToast('Add API keys in Settings'); return; }
-  showToast('Generating today\'s script...');
-  try {
-    const res = await fetch(vpsUrl + '/scheduler/run-now', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ant_key: antKey, phone: state.settings.phoneNumber || '' })
-    });
-    if ((await res.json()).success) {
-      showToast('Script generating — check Video tab in 30 seconds');
-      setTimeout(() => { loadSchedulerStatus(); renderWeeklyQueue(); }, 30000);
-    }
-  } catch(e) { showToast('Cannot reach VPS'); }
-}
-
-// ── SCHEDULER ──
-async function loadSchedulerStatus() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) return;
-  try {
-    const res = await fetch(vpsUrl + '/scheduler/status');
-    const data = await res.json();
-    const scriptEl = document.getElementById('sched-script-status');
-    const videoEl = document.getElementById('sched-video-status');
-    const runningEl = document.getElementById('sched-running-status');
-    if (scriptEl) scriptEl.textContent = data.script_ready ? '✓ Ready' : 'Not yet';
-    if (scriptEl) scriptEl.style.color = data.script_ready ? 'var(--success)' : 'var(--white-dim)';
-    if (videoEl) videoEl.textContent = data.video_ready ? '✓ Ready' : 'Waiting';
-    if (videoEl) videoEl.style.color = data.video_ready ? 'var(--success)' : 'var(--white-dim)';
-    if (runningEl) runningEl.textContent = data.running ? '● Active' : '○ Inactive';
-    if (runningEl) runningEl.style.color = data.running ? 'var(--success)' : 'var(--white-dim)';
-    
-    if (data.script_ready) {
-      loadDailyScript();
-    }
-  } catch(e) {}
-}
-
-async function loadDailyScript() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) return;
-  try {
-    const res = await fetch(vpsUrl + '/scheduler/get-script');
-    const data = await res.json();
-    if (data.exists && data.script) {
-      document.getElementById('daily-script-preview').style.display = 'block';
-      document.getElementById('daily-script-text').textContent = data.script;
-    }
-  } catch(e) {}
-}
-
-async function runSchedulerNow() {
-  const vpsUrl = state.settings.vpsUrl;
-  const antKey = state.settings.antKey;
-  const phone = state.settings.phoneNumber;
-  if (!vpsUrl || !antKey) { showToast('Add VPS URL and Claude API key in Settings'); return; }
-  showToast('Generating script now...');
-  try {
-    const res = await fetch(vpsUrl + '/scheduler/run-now', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ant_key: antKey, phone: phone || '' })
-    });
-    const data = await res.json();
-    if (data.success) {
-      showToast('Script generating — check back in 30 seconds');
-      setTimeout(loadSchedulerStatus, 30000);
-    }
-  } catch(e) { showToast('Cannot reach VPS'); }
-}
-
-
-function copyScriptForInVideo(i) {
-  const s = state.scripts[i];
-  if (!s) return;
-  const invideoPreamble = `Create a 45-60 second vertical 9:16 YouTube Short in the AI While You Sleeping style.\n\nVISUAL STYLE: Dark navy and black backgrounds with vibrant neon pops of cyan, gold, and purple. Fast cuts every 1-2 seconds. Bold white text captions with black outline. Cinematic lighting with glowing accents.\n\nVOICEOVER: Confident friend energy. Mix of directness and curiosity. Never robotic. Real talk.\n\nMUSIC: Match the topic — lo-fi hip hop for productivity tools, trap beats for hype reveals, cinematic builds for mind-blowing moments.\n\nCAPTIONS: Always on. Bold white text, black outline. Large and readable on mobile.\n\n---SCRIPT---\n`;
-  navigator.clipboard.writeText(invideoPreamble + s.script).then(() => {
-    showToast('Copied! Now paste into InVideo');
-    autoFillFromScript(s.script);
-    markStep1Done();
-  });
-}
-
-function addScriptToQueue(i) {
-  const s = state.scripts[i];
-  if (!s) return;
-  autoFillFromScript(s.script);
-  showTab('video');
-  showToast('Script loaded — fill in video path then Add to Queue');
-}
-
-function copyDailyScript() {
-  const script = document.getElementById('daily-script-text').textContent;
-  const invideoPreamble = `Create a 45-60 second vertical 9:16 YouTube Short in the AI While You Sleeping style.
-
-VISUAL STYLE: Dark navy and black backgrounds with vibrant neon pops of cyan, gold, and purple. Fast cuts every 1-2 seconds. Bold white text captions. Cinematic lighting with glowing accents.
-
-VOICEOVER: Confident friend energy. Mix of directness and curiosity. Never robotic. Real talk.
-
-MUSIC: Match the topic — lo-fi hip hop for productivity tools, trap beats for hype reveals, cinematic builds for mind-blowing moments.
-
-CAPTIONS: Always on. Bold white text, black outline. Large and readable on mobile.
-
----SCRIPT BELOW---
-`;
-  navigator.clipboard.writeText(invideoPreamble + script).then(() => showToast('Script + InVideo prompt copied!'));
-}
-
-async function markVideoReady() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) return;
-  try {
-    await fetch(vpsUrl + '/scheduler/mark-video-ready', { method: 'POST' });
-    showToast('Video marked ready — will auto-upload at scheduled time');
-    loadSchedulerStatus();
-  } catch(e) { showToast('Cannot reach VPS'); }
-}
-
-
-// ── CHECKLIST ──
-function markStep1Done() {
-  setCheckDone(1); setCheckActive(2);
-}
-function markStep3Done() {
-  setCheckDone(3); setCheckActive(4);
-  document.getElementById('upload-path').value = '/root/awys/video.mp4';
-}
-function setCheckDone(n) {
-  const num = document.getElementById('check-num-' + n);
-  const badge = document.getElementById('check-badge-' + n);
-  if (num) { num.textContent = '✓'; num.classList.add('done'); }
-  if (badge) { badge.textContent = 'DONE'; badge.classList.add('done'); badge.classList.remove('active'); }
-}
-function setCheckActive(n) {
-  const badge = document.getElementById('check-badge-' + n);
-  if (badge) { badge.textContent = 'DO THIS'; badge.classList.add('active'); }
-}
-
-function updateScpCommand(filename) {
-  const cmd = document.getElementById('scp-cmd-display');
-  if (!cmd) return;
-  if (filename.trim()) {
-    cmd.textContent = 'scp ~/Downloads/' + filename.trim() + ' root@187.124.240.101:/root/awys/video.mp4';
-  } else {
-    cmd.textContent = 'scp ~/Downloads/YOUR_VIDEO.mp4 root@187.124.240.101:/root/awys/video.mp4';
-  }
-}
-
-// ── INVIDEO UPLOAD WORKFLOW ──
-function updateScpCommand(filename) {
-  const cmd = document.getElementById('scp-command');
-  if (!cmd) return;
-  if (filename.trim()) {
-    cmd.textContent = 'scp ~/Downloads/' + filename.trim() + ' root@187.124.240.101:/root/awys/video.mp4';
-  } else {
-    cmd.textContent = 'scp ~/Downloads/YOUR_VIDEO.mp4 root@187.124.240.101:/root/awys/video.mp4';
-  }
-}
-
-async function uploadToYouTube() {
-  const vpsUrl = state.settings.vpsUrl;
-  const title = document.getElementById('upload-title').value.trim();
-  const description = document.getElementById('upload-description').value.trim();
-  const videoPath = document.getElementById('upload-path').value.trim();
-  const privacy = document.getElementById('upload-privacy').value;
-
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
-  if (!title) { showToast('Add a video title'); return; }
-  if (!videoPath) { showToast('Add the video file path'); return; }
-
-  const btn = document.getElementById('upload-btn');
-  btn.disabled = true; btn.textContent = 'Uploading...';
-  document.getElementById('upload-progress-wrap').style.display = 'block';
-  document.getElementById('upload-progress-fill').style.width = '30%';
-  document.getElementById('upload-status').textContent = 'Uploading to YouTube...';
-
-  const tags = ['AI tools', 'ChatGPT', 'artificial intelligence', 'shorts', 'AI tutorial', 'productivity', 'tech'];
-  const fullDescription = description + '\n\nFollow for daily AI tool reviews — new tools every week.\n\n#AItools #shorts #ChatGPT #artificialintelligence #AItutorial #productivity';
-
-  try {
-    const res = await fetch(vpsUrl + '/youtube/upload-direct', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, description: fullDescription, tags, video_path: videoPath, privacy })
-    });
-    const data = await res.json();
-    document.getElementById('upload-progress-fill').style.width = '100%';
-
-    if (data.success) {
-      document.getElementById('upload-status').textContent = '✓ Live on YouTube';
-      document.getElementById('upload-status').style.color = 'var(--success)';
-      document.getElementById('video-result').innerHTML =
-        '<div style="padding:20px;border:1px solid rgba(107,175,138,0.4);margin-top:24px;background:rgba(107,175,138,0.05)">' +
-        '<div style="font-size:9px;letter-spacing:6px;color:var(--success);margin-bottom:12px">PUBLISHED</div>' +
-        '<a href="' + data.url + '" target="_blank" style="color:var(--gold);font-size:14px">' + data.url + '</a>' +
-        '</div>';
-      showToast('Video live on YouTube!');
-      loadAnalytics();
-    } else {
-      const errMsg = data.error || 'Upload failed';
-      document.getElementById('upload-status').textContent = errMsg.includes('quota') ? 'YouTube quota exceeded — resets at midnight' : errMsg;
-      document.getElementById('upload-status').style.color = 'var(--danger)';
-      showToast(errMsg.includes('quota') ? 'Quota exceeded — try after midnight' : 'Upload failed');
-    }
-  } catch(e) {
-    document.getElementById('upload-status').textContent = 'Cannot reach VPS';
-    document.getElementById('upload-status').style.color = 'var(--danger)';
-    showToast('Cannot reach VPS');
-  }
-  btn.disabled = false; btn.textContent = 'Upload to YouTube';
-}
-
-// ── STYLE PRESETS ──
-const STYLE_PROMPTS = {
-  anime: 'anime style, vibrant neon colors, futuristic aesthetic, glowing cyan and gold color palette, dynamic camera movement, expressive characters, holographic interfaces, cinematic lighting, ultra detailed illustration, vertical 9:16',
-  realistic: 'cinematic realistic footage, modern tech environment, professional lighting, dynamic camera angles, vertical 9:16 format, high quality',
-  futuristic: 'sci-fi futuristic aesthetic, neon lights, holographic displays, cyberpunk style, dark background with glowing elements, sleek technology, vertical 9:16',
-  minimal: 'clean minimal aesthetic, white and dark tones, modern design, simple geometric shapes, professional corporate style, vertical 9:16'
-};
-
-const SCENE_TEMPLATES = {
-  anime: [
-    'anime style character with glowing eyes discovering {topic} on a holographic screen, neon cyan atmosphere, dynamic zoom in',
-    'anime style split screen showing before and after using {topic}, vibrant colors, dramatic lighting',
-    'anime style character reacting with amazement to {topic} results, sparkle effects, gold and cyan palette',
-    'anime style close up of glowing holographic interface showing {topic} features, neon lights',
-    'anime style character holding phone showing {topic} app, futuristic city background, vibrant colors',
-    'anime style victory pose after using {topic}, confetti explosion, bright celebration colors'
-  ],
-  realistic: [
-    'person discovering {topic} on laptop, natural lighting, modern home office, genuine reaction',
-    'close up of screen showing {topic} interface, hands typing, professional environment',
-    'person smiling looking at phone showing {topic} results, bright natural light',
-    'split screen comparison showing old vs new way using {topic}, clean minimal aesthetic',
-    'person sharing {topic} with friend, excited reaction, warm lighting',
-    'close up of amazing results from {topic} on screen, clean modern desk'
-  ],
-  futuristic: [
-    'cyberpunk character accessing {topic} through holographic display, neon city background',
-    'futuristic interface showing {topic} data visualization, glowing elements, dark background',
-    'sci-fi aesthetic showing {topic} AI neural network visualization, blue and purple lights',
-    'cyborg hand interacting with {topic} hologram, chrome and neon aesthetic',
-    'futuristic dashboard showing {topic} metrics, sleek design, glowing accents',
-    'AI robot assistant demonstrating {topic} capabilities, clean white and chrome design'
-  ],
-  minimal: [
-    'clean minimal animation showing {topic} concept, white background, simple shapes',
-    'modern flat design illustration of {topic} workflow, clean colors',
-    'simple animated text revealing {topic} key benefit, minimal aesthetic',
-    'clean product showcase of {topic} interface, white space, minimal design',
-    'modern infographic animation showing {topic} statistics, clean typography',
-    'minimal split screen showing {topic} before and after, clean white design'
-  ]
-};
-
-// ── MULTI-CLIP VIDEO GENERATION ──
-async function generateMultiClipVideo() {
-  const prompt = document.getElementById('video-prompt').value.trim();
-  const vpsUrl = state.settings.vpsUrl;
-  const replicateKey = state.settings.replicateKey;
-  const style = document.getElementById('video-style').value;
-  const numClips = parseInt(document.getElementById('video-clips').value);
-
-  if (!prompt) { showToast('Enter a topic or script first'); return; }
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
-  if (!replicateKey) { showToast('Add Replicate API key in Settings'); return; }
-
-  const btn = document.getElementById('video-gen-btn');
-  btn.disabled = true; btn.textContent = 'Generating...';
-
-  document.getElementById('video-progress-wrap').style.display = 'block';
-  document.getElementById('video-result').innerHTML = '';
-  setStepStatus('video', 'running', 'Generating clips...');
-  setProgress(5);
-
-  // Extract topic from prompt
-  const topic = prompt.length > 50 ? prompt.substring(0, 50) : prompt;
-  const scenes = SCENE_TEMPLATES[style] || SCENE_TEMPLATES.anime;
-  const stylePrefix = STYLE_PROMPTS[style] || STYLE_PROMPTS.anime;
-
-  setVideoMsg('Starting ' + numClips + ' clip generation...');
-
-  try {
-    const res = await fetch(vpsUrl + '/video/generate-multi', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        topic: topic,
-        style: style,
-        style_prompt: stylePrefix,
-        scenes: scenes.slice(0, numClips).map(s => s.replace(/{topic}/g, topic)),
-        num_clips: numClips,
-        replicate_key: replicateKey,
-        script: prompt
-      })
-    });
-
-    const data = await res.json();
-    if (data.error) { showToast('Error: ' + data.error); resetVideoBtn(); return; }
-
-    // Poll for all clips to complete
-    pollMultiClipStatus(data.job_id, replicateKey, vpsUrl, numClips);
-
-  } catch(e) {
-    showToast('Cannot reach VPS — check Backend URL in Settings');
-    resetVideoBtn();
-  }
-}
-
-async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
-  let dots = 0;
-  const interval = setInterval(async () => {
-    try {
-      const res = await fetch(vpsUrl + '/video/job-status/' + jobId + '?clips=1&key=' + replicateKey);
-      const data = await res.json();
-
-      const completed = data.completed || 0;
-      const total = data.total || numClips;
-      const pct = Math.min(10 + (completed / total) * 70, 80);
-      setProgress(pct);
-      setVideoMsg('Clips complete: ' + completed + ' / ' + total);
-      setStepStatus('video', 'running', completed + '/' + total + ' clips done');
-
-      if (data.status === 'stitching') {
-        setStepStatus('video', 'done', 'All clips ready');
-        setStepStatus('stitch', 'running', 'Stitching...');
-        setStepStatus('upload', '', 'Waiting');
-        setProgress(88);
-        setVideoMsg('Stitching ' + data.total + ' clips together...');
-      }
-
-      if (data.status === 'complete' && data.output_url) {
-        clearInterval(interval);
-        setProgress(100);
-        setStepStatus('video', 'done', 'All clips done');
-        setStepStatus('stitch', 'done', 'Complete');
-        setVideoMsg('Video ready!');
-        // Use clip_urls from job for preview (direct Replicate CDN — no CORS issues)
-        const previewUrl = data.clip_urls && data.clip_urls.length > 0
-          ? data.clip_urls[0]
-          : (vpsUrl + '/video/latest?t=' + Date.now());
-        showVideoPreview(previewUrl);
-        showVideoActions();
-        resetVideoBtn();
-      }
-
-      if (data.status === 'error') {
-        clearInterval(interval);
-        showToast('Error: ' + (data.error || 'Generation failed'));
-        setStepStatus('video', 'error', 'Failed');
-        resetVideoBtn();
-      }
-
-    } catch(e) {
-      dots++;
-      if (dots > 60) { clearInterval(interval); showToast('Timed out — try again'); resetVideoBtn(); }
-    }
-  }, 5000);
-}
-
-// ── VIDEO GENERATION ──
-let currentPredictionId = null;
-let videoPollingInterval = null;
-
-async function generateVideo() {
-  const prompt = document.getElementById('video-prompt').value.trim();
-  const vpsUrl = state.settings.vpsUrl;
-  const replicateKey = state.settings.replicateKey;
-  const model = document.getElementById('video-model').value;
-  const duration = parseInt(document.getElementById('video-duration').value);
-
-  if (!prompt) { showToast('Enter a prompt first'); return; }
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
-  if (!replicateKey) { showToast('Add Replicate API key in Settings'); return; }
-
-  const btn = document.getElementById('video-gen-btn');
-  btn.disabled = true; btn.textContent = 'Starting...';
-
-  setStepStatus('video', 'running', 'Generating...');
-  document.getElementById('video-progress-wrap').style.display = 'block';
-  setProgress(10);
-  setVideoMsg('Sending to Replicate AI...');
-
-  try {
-    const res = await fetch(vpsUrl + '/video/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, replicate_key: replicateKey, model, duration })
-    });
-    const data = await res.json();
-    if (data.error) { showToast('Error: ' + data.error); resetVideoBtn(); return; }
-
-    currentPredictionId = data.prediction_id;
-    setVideoMsg('Video rendering — this takes 1-3 minutes...');
-    setProgress(20);
-    pollVideoStatus(replicateKey, vpsUrl);
-
-  } catch(e) {
-    showToast('Cannot reach VPS');
-    resetVideoBtn();
-  }
-}
-
-function pollVideoStatus(replicateKey, vpsUrl) {
-  if (videoPollingInterval) clearInterval(videoPollingInterval);
-  let progress = 20;
-
-  videoPollingInterval = setInterval(async () => {
-    try {
-      const res = await fetch(vpsUrl + '/video/status/' + currentPredictionId + '?key=' + replicateKey);
-      const data = await res.json();
-
-      progress = Math.min(progress + 5, 85);
-      setProgress(progress);
-
-      if (data.status === 'succeeded' && data.output) {
-        clearInterval(videoPollingInterval);
-        setProgress(90);
-        setVideoMsg('Video ready — downloading...');
-
-        const videoUrl = Array.isArray(data.output) ? data.output[0] : data.output;
-
-        // Show preview immediately from Replicate CDN
-        showVideoPreview(videoUrl);
-
-        // Download to VPS in background
-        const dlRes = await fetch(vpsUrl + '/video/download', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: videoUrl, filename: 'generated_video.mp4' })
-        });
-        const dlData = await dlRes.json();
-
-        if (dlData.success) {
-          setProgress(100);
-          setStepStatus('video', 'done', 'Complete');
-          setStepStatus('thumb', 'done', 'Ready');
-          setVideoMsg('Video ready to upload');
-          showVideoActions();
-        }
-      } else if (data.status === 'failed') {
-        clearInterval(videoPollingInterval);
-        setStepStatus('video', 'error', 'Failed');
-        showToast('Video generation failed');
-        resetVideoBtn();
-      }
-    } catch(e) {
-      console.log('Polling error:', e);
-    }
-  }, 5000);
-}
-
-async function autoUploadVideo() {
-  const vpsUrl = state.settings.vpsUrl;
-  const prompt = document.getElementById('video-prompt').value.trim();
-  const title = prompt.substring(0, 80);
-
-  setStepStatus('upload', 'running', 'Uploading...');
-
-  try {
-    const res = await fetch(vpsUrl + '/youtube/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: title,
-        description: prompt + '\n\nFollow for daily AI tool reviews.\n\n#AItools #shorts #ChatGPT #artificialintelligence',
-        tags: ['AI tools', 'ChatGPT', 'artificial intelligence', 'shorts', 'AI tutorial'],
-        video_path: '/root/awys/generated_video.mp4',
-        privacy: 'public'
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      setStepStatus('upload', 'done', 'Posted');
-      showToast('Video live on YouTube!');
-      document.getElementById('video-result').innerHTML =
-        '<div style="padding:20px;border:1px solid rgba(107,175,138,0.4);margin-top:24px">' +
-        '<div style="font-size:9px;letter-spacing:6px;color:var(--success);margin-bottom:12px">PUBLISHED</div>' +
-        '<a href="' + data.url + '" target="_blank" style="color:var(--gold);font-size:14px;text-decoration:none">' + data.url + '</a>' +
-        '</div>';
-      loadAnalytics();
-    }
-  } catch(e) {
-    setStepStatus('upload', 'error', 'Failed');
-    showToast('Upload failed — check VPS');
-  }
-  resetVideoBtn();
-}
-
-function setStepStatus(step, state, text) {
-  const el = document.getElementById('step-' + step + '-status');
-  const card = document.getElementById('step-' + step);
-  if (el) { el.textContent = text; el.className = 'step-status ' + state; }
-  if (card) { card.className = 'pipeline-step ' + (state === 'done' ? 'done' : state === 'running' ? 'active' : ''); }
-}
-
-function setProgress(pct) {
-  const el = document.getElementById('video-progress-fill');
-  if (el) el.style.width = pct + '%';
-}
-
-function setVideoMsg(msg) {
-  const el = document.getElementById('video-status-msg');
-  if (el) el.textContent = msg;
-}
-
-function resetVideoBtn() {
-  const btn = document.getElementById('video-gen-btn');
-  if (btn) { btn.disabled = false; btn.textContent = 'Generate Video'; }
-}
-
-function showVideoPreview(url) {
-  const result = document.getElementById('video-result');
-  if (!result) return;
-  result.innerHTML =
-    '<div style="margin-top:24px;border:1px solid rgba(240,160,32,0.3);background:rgba(30,15,50,0.5);">' +
-    '<div style="padding:16px 20px;border-bottom:1px solid rgba(240,160,32,0.15);font-size:9px;letter-spacing:6px;color:var(--gold)">VIDEO PREVIEW</div>' +
-    '<div style="padding:20px;display:flex;justify-content:center;background:#000">' +
-    '<video controls autoplay muted loop playsinline style="max-height:500px;max-width:100%;border-radius:2px">' +
-    '<source src="' + url + '" type="video/mp4">' +
-    '</video>' +
-    '</div>' +
-    '<div style="padding:16px 20px;display:flex;gap:20px;align-items:center" id="video-action-bar">' +
-    '<div style="font-size:11px;color:var(--white-dim)">Generating thumbnail...</div>' +
-    '</div>' +
-    '</div>';
-  state.lastVideoUrl = url;
-}
-
-function showVideoActions() {
-  const bar = document.getElementById('video-action-bar');
-  if (!bar) return;
-  bar.innerHTML =
-    '<button class="gen-btn" onclick="uploadGeneratedVideo()" style="padding:10px 20px">Upload to YouTube</button>' +
-    '<button class="script-btn" onclick="regenerateVideo()" style="margin-left:8px">Regenerate</button>' +
-    '<button class="script-btn" onclick="downloadVideo()" style="margin-left:8px">Download</button>';
-}
-
-async function uploadGeneratedVideo() {
-  const vpsUrl = state.settings.vpsUrl;
-  const prompt = document.getElementById('video-prompt').value.trim();
-  const title = prompt.length > 80 ? prompt.substring(0, 77) + '...' : prompt;
-  const bar = document.getElementById('video-action-bar');
-  if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--gold);letter-spacing:3px">Uploading to YouTube...</div>';
-  setStepStatus('upload', 'running', 'Uploading...');
-  try {
-    const res = await fetch(vpsUrl + '/youtube/upload-direct', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: title,
-        description: prompt + '\n\nFollow for daily AI tool reviews — new tools every week.\n\n#AItools #shorts #ChatGPT #artificialintelligence #AItutorial #productivity',
-        tags: ['AI tools', 'ChatGPT', 'artificial intelligence', 'shorts', 'AI tutorial', 'productivity'],
-        video_path: '/root/awys/generated_video.mp4',
-        privacy: 'public'
-      })
-    });
-    const data = await res.json();
-    if (data.success) {
-      setStepStatus('upload', 'done', 'Posted');
-      if (bar) bar.innerHTML =
-        '<div style="font-size:11px;color:var(--success);letter-spacing:3px;margin-right:16px">✓ LIVE ON YOUTUBE</div>' +
-        '<a href="' + data.url + '" target="_blank" style="color:var(--gold);font-size:12px">' + data.url + '</a>';
-      showToast('Video live on YouTube!');
-      loadAnalytics();
-    } else {
-      if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--danger)">' + (data.error || 'Upload failed') + '</div><button class="script-btn" onclick="uploadGeneratedVideo()" style="margin-left:12px">Retry</button>';
-      setStepStatus('upload', 'error', 'Failed');
-    }
-  } catch(e) {
-    if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--danger)">Cannot reach VPS</div><button class="script-btn" onclick="uploadGeneratedVideo()" style="margin-left:12px">Retry</button>';
-  }
-}
-
-function regenerateVideo() {
-  document.getElementById('video-result').innerHTML = '';
-  generateVideo();
-}
-
-function downloadVideo() {
-  if (state.lastVideoUrl) {
-    const a = document.createElement('a');
-    a.href = state.lastVideoUrl;
-    a.download = 'awys_video.mp4';
-    a.target = '_blank';
-    a.click();
-  }
-}
-
-// ── AUTO-PILOT ──
-async function runAutoPilot() {
-  const vpsUrl = state.settings.vpsUrl;
-  const antKey = state.settings.antKey;
-  if (!antKey || !vpsUrl) { showToast('Add API keys in Settings first'); return; }
-  if (!state.settings.replicateKey) { showToast('Add Replicate API key in Settings'); return; }
-
-  showToast('Auto-Pilot starting...');
-
-  // Step 1 — Pick top trending topic
-  if (!state.trends.length) await loadTrends();
-  const trend = state.trends.find(t => t.hot) || state.trends[0];
-  if (!trend) { showToast('No trends loaded'); return; }
-
-  showTab('video');
-  setStepStatus('script', 'running', 'Generating...');
-
-  // Step 2 — Generate script
-  try {
-    const scriptRes = await fetch(vpsUrl + '/generate-script', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic: trend.title, platform: 'youtube', key: antKey, length: 120 })
-    });
-    const scriptData = await scriptRes.json();
-    if (scriptData.error) { showToast('Script error: ' + scriptData.error); return; }
-
-    setStepStatus('script', 'done', 'Complete');
-
-    // Extract hook for video prompt
-    const hookMatch = scriptData.script.match(/HOOK:\s*(.+)/i);
-    const hook = hookMatch ? hookMatch[1].trim() : trend.title;
-    const videoPrompt = 'Short-form video: ' + hook + '. Topic: ' + trend.title + '. Modern, engaging, tech content creator style. Vertical 9:16 format.';
-
-    document.getElementById('video-prompt').value = videoPrompt;
-    showToast('Script done — generating video...');
-    generateVideo();
-
-  } catch(e) {
-    showToast('Auto-Pilot error: ' + e.message);
-  }
-}
-
-// ── REAL-TIME ANALYTICS ──
-let analyticsInterval = null;
-
-function startRealtimeAnalytics() {
-  if (analyticsInterval) return;
-  // Sync every 5 minutes
-  analyticsInterval = setInterval(() => {
-    syncAnalyticsFromServer();
-  }, 5 * 60 * 1000);
-}
-
-async function syncAnalyticsFromServer() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) return;
-  try {
-    const res = await fetch(vpsUrl + '/analytics/sync', { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
-      updateAnalyticsUI(data.data);
-    }
-  } catch(e) {}
-}
-
-async function loadAnalytics() {
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings first'); return; }
-
-  const today = new Date();
-  const dayLabels = ['S','M','T','W','T','F','S'];
-  const labels = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    labels.push(dayLabels[d.getDay()]);
-  }
-  const labelContainer = document.getElementById('chart-labels');
-  if (labelContainer) labelContainer.innerHTML = labels.map(l => '<div class="chart-label">' + l + '</div>').join('');
-
-  const bars = document.querySelectorAll('#chart-views .bar');
-  bars.forEach((b, i) => { b.classList.remove('active'); if (i === 6) b.classList.add('active'); });
-
-  const syncEl = document.getElementById('a-synced');
-  if (syncEl) syncEl.textContent = today.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-
-  // First try to get cached data
-  try {
-    const cacheRes = await fetch(vpsUrl + '/analytics/data');
-    const cacheData = await cacheRes.json();
-    if (cacheData.youtube && cacheData.youtube.name) {
-      updateAnalyticsUI(cacheData);
-    }
-  } catch(e) {}
-
-  // Then sync fresh from YouTube
-  try {
-    const res = await fetch(vpsUrl + '/analytics/sync', { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
-      updateAnalyticsUI(data.data);
-      showToast('Analytics synced from YouTube');
-    } else if (data.error && data.error.includes('quota')) {
-      showToast('YouTube quota exceeded — resets midnight Pacific');
-    }
-  } catch(e) {
-    showToast('Could not sync — check VPS connection');
-  }
-
-  startRealtimeAnalytics();
-}
-
-function updateAnalyticsUI(data) {
-  const yt = data.youtube || {};
-  const subs = yt.subscribers || 0;
-  const views = yt.views || 0;
-  const videos = yt.videos || 0;
-
-  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-
-  setEl('a-views', formatNum(views));
-  setEl('a-followers', formatNum(subs));
-  setEl('a-posts', videos);
-  setEl('yt-views-label', formatNum(views) + ' views');
-  setEl('yt-name', yt.name || '—');
-  setEl('yt-total-views', formatNum(views));
-  setEl('yt-total-subs', formatNum(subs));
-  setEl('yt-total-videos', videos);
-  setEl('ms-500', subs + ' / 500');
-  setEl('ms-1000', subs + ' / 1,000');
-  setEl('ms-4000', '0 / 4,000');
-
-  const monetizeEl = document.getElementById('ms-monetize');
-  if (monetizeEl) {
-    monetizeEl.textContent = subs >= 1000 ? 'Eligible' : 'Not eligible yet';
-    monetizeEl.className = 'analytics-val ' + (subs >= 1000 ? 'up' : 'down');
-  }
-
-  const deltaViews = document.getElementById('a-views-delta');
-  if (deltaViews) deltaViews.textContent = views > 0 ? '↑ Growing' : '↑ Getting started';
-  const deltaSubs = document.getElementById('a-subs-delta');
-  if (deltaSubs) deltaSubs.textContent = subs > 0 ? '↑ Growing' : '↑ Getting started';
-
-  // Update chart with history data
-  if (data.history && data.history.length > 0) {
-    const history = data.history.slice(-7);
-    const maxViews = Math.max(...history.map(h => h.views), 1);
-    const bars = document.querySelectorAll('#chart-views .bar');
-    bars.forEach((bar, i) => {
-      const entry = history[i] || { views: 0 };
-      const pct = Math.max((entry.views / maxViews) * 100, 5);
-      bar.style.height = pct + '%';
-    });
-  }
-
-  // Recent videos
-  if (data.recent_videos && data.recent_videos.length > 0) {
-    const topCard = document.querySelector('#panel-analytics .analytics-card:nth-child(3)');
-    if (topCard) {
-      topCard.innerHTML = '<div class="analytics-title">Recent Videos</div>' +
-        data.recent_videos.slice(0, 4).map(v =>
-          '<div class="analytics-row"><span class="analytics-label" style="max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + v.title + '</span>' +
-          '<span class="analytics-val">' + formatNum(v.views) + ' views</span></div>'
-        ).join('');
-    }
-  }
-}
-
-
-
-// ── GITHUB AUTO-DEPLOY ──
-
-async function runHealthCheck() {
-  healthIssues = [];
-  const report = [];
-
-  // 1. Check for duplicate nav tabs
-  const navButtons = document.querySelectorAll('.nav-tab');
-  const navLabels = Array.from(navButtons).map(b => b.textContent.trim());
-  const navDupes = navLabels.filter((v, i, a) => a.indexOf(v) !== i);
-  if (navDupes.length > 0) {
-    healthIssues.push({type:'nav_dupe', desc:'Duplicate nav tabs: ' + navDupes.join(', '), fixable: true});
-    report.push({label:'Nav tabs', status:'err', msg:'Duplicate found: ' + navDupes.join(', ')});
-  } else {
-    report.push({label:'Nav tabs (' + navLabels.length + ')', status:'ok', msg:'No duplicates'});
-  }
-
-  // 2. Check all nav tabs have matching panels
-  const navOnclicks = Array.from(navButtons).map(b => b.getAttribute('onclick')?.match(/showTab\'(\w+)\'/)?.[1] || b.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/)?.[1]);
-  for (const tabId of navOnclicks) {
-    if (!tabId) continue;
-    const panel = document.getElementById('panel-' + tabId);
-    if (!panel) {
-      healthIssues.push({type:'missing_panel', desc:'Missing panel: panel-' + tabId, fixable: false});
-      report.push({label:'Panel: ' + tabId, status:'err', msg:'Panel not found in DOM'});
-    } else {
-      report.push({label:'Panel: ' + tabId, status:'ok', msg:'Found'});
-    }
-  }
-
-  // 3. Check required DOM elements
-  for (const el of REQUIRED_ELEMENTS) {
-    const found = document.getElementById(el.id);
-    if (!found) {
-      healthIssues.push({type:'missing_element', id: el.id, desc:'Missing element: ' + el.id, fixable: false});
-      report.push({label:el.desc, status:'err', msg:'#' + el.id + ' not found'});
-    } else {
-      report.push({label:el.desc, status:'ok', msg:'✓'});
-    }
-  }
-
-  // 4. Check settings are saved
-  const settings = JSON.parse(localStorage.getItem('awys-settings') || '{}');
-  if (!settings.vpsUrl) {
-    healthIssues.push({type:'no_vps', desc:'VPS URL not configured', fixable: false});
-    report.push({label:'VPS Backend URL', status:'warn', msg:'Not configured — add in Settings'});
-  } else {
-    report.push({label:'VPS Backend URL', status:'ok', msg:settings.vpsUrl});
-  }
-
-  if (!settings.antKey) {
-    healthIssues.push({type:'no_ant', desc:'Claude API key not configured', fixable: false});
-    report.push({label:'Claude API Key', status:'warn', msg:'Not configured — add in Settings'});
-  } else {
-    report.push({label:'Claude API Key', status:'ok', msg:'Configured'});
-  }
-
-  // 5. Check GitHub token
-  if (settings.githubToken) {
-    try {
-      const ghRes = await fetch('https://api.github.com/repos/' + (settings.githubRepo || 'qspencer-4/awys-dashboard'), {
-        headers: {
-          'Authorization': 'token ' + settings.githubToken,
-          'Accept': 'application/vnd.github.v3+json'
-        },
-        signal: AbortSignal.timeout(5000)
-      });
-      const ghData = await ghRes.json();
-      if (ghRes.ok && ghData.permissions?.push) {
-        report.push({label:'GitHub Token', status:'ok', msg:'Valid — push access confirmed'});
-      } else if (ghRes.ok && !ghData.permissions?.push) {
-        healthIssues.push({type:'gh_no_push', desc:'GitHub token missing repo write permission', fixable: false});
-        report.push({label:'GitHub Token', status:'err', msg:'No write access — regenerate with repo scope'});
-      } else if (ghRes.status === 401) {
-        healthIssues.push({type:'gh_invalid', desc:'GitHub token invalid or expired', fixable: false});
-        report.push({label:'GitHub Token', status:'err', msg:'Invalid or expired — regenerate token'});
-      } else if (ghRes.status === 403) {
-        healthIssues.push({type:'gh_forbidden', desc:'GitHub token lacks repo permission', fixable: false});
-        report.push({label:'GitHub Token', status:'err', msg:'Permission denied — needs repo scope checked'});
-      } else {
-        report.push({label:'GitHub Token', status:'warn', msg:'Could not verify: ' + ghRes.status});
-      }
-    } catch(e) {
-      report.push({label:'GitHub Token', status:'warn', msg:'Could not verify — check internet'});
-    }
-  } else {
-    healthIssues.push({type:'no_gh_token', desc:'GitHub token not configured', fixable: false});
-    report.push({label:'GitHub Token', status:'warn', msg:'Not configured — add in Settings to enable auto-deploy'});
-  }
-
-  // 6. Check VPS connectivity
-  if (settings.vpsUrl) {
-    try {
-      const res = await fetch(settings.vpsUrl + '/health', {signal: AbortSignal.timeout(5000)});
-      const data = await res.json();
-      report.push({label:'VPS Server', status:'ok', msg:'Online v' + data.version});
-      if (!data.youtube_connected) {
-        healthIssues.push({type:'no_yt', desc:'YouTube not connected', fixable: false});
-        report.push({label:'YouTube OAuth', status:'warn', msg:'Not connected'});
-      } else {
-        report.push({label:'YouTube OAuth', status:'ok', msg:'Connected'});
-      }
-    } catch(e) {
-      healthIssues.push({type:'vps_down', desc:'VPS unreachable', fixable: false});
-      report.push({label:'VPS Server', status:'err', msg:'Unreachable — check Cloudflare tunnel'});
-    }
-  }
-
-  // 6. Check state integrity
-  if (!Array.isArray(state.trends)) {
-    healthIssues.push({type:'bad_state', desc:'state.trends corrupted', fixable: true});
-    report.push({label:'Trends state', status:'err', msg:'Corrupted — will reset'});
-  } else {
-    report.push({label:'Trends state', status:'ok', msg:state.trends.length + ' trends loaded'});
-  }
-
-  if (!Array.isArray(state.scripts)) {
-    healthIssues.push({type:'bad_scripts', desc:'state.scripts corrupted', fixable: true});
-    report.push({label:'Scripts state', status:'err', msg:'Corrupted — will reset'});
-  } else {
-    report.push({label:'Scripts state', status:'ok', msg:state.scripts.length + ' scripts'});
-  }
-
-  // Update health dot color
-  const dot = document.getElementById('health-dot');
-  if (dot) {
-    const errors = healthIssues.filter(i => !i.fixable || i.type === 'vps_down');
-    const warnings = healthIssues.filter(i => i.type === 'no_vps' || i.type === 'no_ant' || i.type === 'no_yt');
-    if (errors.length > 0) dot.style.background = '#F03C3C';
-    else if (warnings.length > 0) dot.style.background = '#F0A020';
-    else dot.style.background = '#6BAF8A';
-    dot.title = healthIssues.length === 0 ? 'All systems healthy' : healthIssues.length + ' issue(s) found';
-  }
-
-  renderHealthReport(report);
-  return healthIssues;
-}
-
-function renderHealthReport(report) {
-  const container = document.getElementById('health-report-content');
-  if (!container) return;
-
-  const errors = report.filter(r => r.status === 'err').length;
-  const warnings = report.filter(r => r.status === 'warn').length;
-
-  container.innerHTML =
-    '<div style="margin-bottom:20px;padding:12px;background:rgba(' +
-    (errors > 0 ? '240,60,60' : warnings > 0 ? '240,160,32' : '107,175,138') +
-    ',0.1);border:1px solid rgba(' +
-    (errors > 0 ? '240,60,60' : warnings > 0 ? '240,160,32' : '107,175,138') +
-    ',0.3)">' +
-    '<div style="font-size:12px">' +
-    (errors > 0 ? '⚠ ' + errors + ' error(s), ' + warnings + ' warning(s) found' :
-     warnings > 0 ? '● ' + warnings + ' warning(s) — app functional but needs attention' :
-     '✓ All systems healthy') +
-    '</div></div>' +
-    report.map(r => `
-      <div class="health-row">
-        <span style="color:var(--white-dim)">${r.label}</span>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:11px;color:var(--white-dim)">${r.msg}</span>
-          <span class="health-status health-${r.status}">${r.status.toUpperCase()}</span>
-        </div>
-      </div>
-    `).join('');
-}
-
-async function runSelfHealing() {
-  let fixed = 0;
-
-  for (const issue of healthIssues) {
-    if (issue.type === 'nav_dupe') {
-      // Remove duplicate nav tabs
-      const seen = new Set();
-      document.querySelectorAll('.nav-tab').forEach(btn => {
-        const label = btn.textContent.trim();
-        if (seen.has(label)) { btn.remove(); fixed++; }
-        else seen.add(label);
-      });
-    }
-    if (issue.type === 'bad_state') {
-      state.trends = []; fixed++;
-    }
-    if (issue.type === 'bad_scripts') {
-      state.scripts = []; fixed++;
-    }
-  }
-
-  showToast(fixed > 0 ? fixed + ' issue(s) auto-fixed' : 'No auto-fixable issues found');
-  await runHealthCheck();
-}
-
-function showHealthReport() {
-  document.getElementById('health-modal').classList.add('open');
-  runHealthCheck();
-}
-
-// Run health check on load and every 5 minutes
-async function initHealthCheck() {
-  await runHealthCheck();
-  setInterval(runHealthCheck, 5 * 60 * 1000);
-}
-
-// ── MODAL CLOSE ON OVERLAY ──
-document.getElementById('script-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
-});
-
-// ── SERVICE WORKER ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/awys-dashboard/sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
-  });
-}
-
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  showToast('Tap install to add AWYS to your home screen');
-});
-</script>
-
-  <!-- HEALTH REPORT MODAL -->
-  <div id="health-modal">
-    <div class="health-report">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-        <div style="font-size:9px;letter-spacing:6px;color:var(--gold)">SYSTEM HEALTH</div>
-        <button onclick="document.getElementById('health-modal').classList.remove('open')" class="script-btn">Close</button>
-      </div>
-      <div id="health-report-content">Running checks...</div>
-      <div style="margin-top:20px;display:flex;gap:10px">
-        <button class="gen-btn" style="font-size:10px;padding:8px 16px" onclick="runSelfHealing()">Auto-Fix All Issues</button>
-        <button class="script-btn" style="font-size:10px" onclick="runHealthCheck()">Re-run Checks</button>
-      </div>
-    </div>
-  </div>
 </body>
 </html>
