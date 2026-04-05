@@ -883,7 +883,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="">Tap install to add AWYS to your home screen</div>
+<div id="toast" class="">Cannot reach VPS — check Settings</div>
 
 <!-- APP -->
 <div id="app" class="show">
@@ -894,7 +894,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
       <div class="header-name">AI While You Sleeping</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="deployToGitHub()" id="deploy-btn" style="font-size:9px;letter-spacing:3px;background:transparent;border:1px solid rgba(240,160,32,0.3);color:var(--gold);padding:5px 12px;cursor:pointer;font-family:var(--font-main)" disabled="">DEPLOYING...</button>
+      <button onclick="deployToGitHub()" id="deploy-btn" style="font-size: 9px; letter-spacing: 3px; background: transparent; border: 1px solid rgba(240, 160, 32, 0.3); color: var(--gold); padding: 5px 12px; cursor: pointer; font-family: var(--font-main);" disabled="">DEPLOYING...</button>
       <div class="header-version" onclick="showTab('changelog')">v0.24</div>
     </div>
   </header>
@@ -937,7 +937,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
         </div>
         <div class="stat-card">
           <div class="stat-label">Scripts Generated</div>
-          <div class="stat-value gold" id="stat-scripts">0</div>
+          <div class="stat-value gold" id="stat-scripts">1</div>
         </div>
       </div>
 
@@ -974,7 +974,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
             <button class="gen-btn" id="gen-script-btn" onclick="generateScript()">Generate Script</button>
           </div>
         </div>
-        <div id="script-generating" style="display:none;font-size:11px;color:var(--gold);letter-spacing:3px">Generating your AWYS script<span class="loading-dots"></span></div>
+        <div id="script-generating" style="display: none; font-size: 11px; color: var(--gold); letter-spacing: 3px;">Generating your AWYS script<span class="loading-dots"></span></div>
       </div>
 
       <!-- GENERATED SCRIPTS -->
