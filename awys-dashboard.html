@@ -1076,6 +1076,9 @@
         <button class="section-action" onclick="generateWeeklyPlan()">Generate Week →</button>
       </div>
 
+      <!-- COUNTDOWN TIMERS -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:32px" id="platform-countdowns"></div>
+
       <!-- MANUAL QUEUE -->
       <div style="margin-bottom:40px">
         <div style="font-size:9px;letter-spacing:6px;color:var(--gold);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(240,160,32,0.15)">MANUAL — READY TO POST</div>
@@ -2415,6 +2418,66 @@ async function loadYouTubeStats() {
 
 
 
+
+// ── PLATFORM COUNTDOWN TIMERS ──
+const PLATFORM_POST_TIMES = {
+  youtube:   { hour: 12, min: 0,  label: 'YouTube',   color: '#FF4444', icon: '▶' },
+  tiktok:    { hour: 12, min: 10, label: 'TikTok',    color: '#00f2ea', icon: '♪' },
+  instagram: { hour: 12, min: 5,  label: 'Instagram', color: '#E1306C', icon: '◈' },
+  facebook:  { hour: 12, min: 15, label: 'Facebook',  color: '#1877F2', icon: 'f' }
+};
+
+function getNextPostTime(hour, min) {
+  const now = new Date();
+  const next = new Date();
+  next.setHours(hour, min, 0, 0);
+  if (next <= now) next.setDate(next.getDate() + 1);
+  return next;
+}
+
+function formatCountdown(ms) {
+  if (ms <= 0) return '00:00:00';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return [h,m,s].map(n => String(n).padStart(2,'0')).join(':');
+}
+
+function renderCountdowns() {
+  const container = document.getElementById('platform-countdowns');
+  if (!container) return;
+  const now = new Date();
+
+  container.innerHTML = Object.entries(PLATFORM_POST_TIMES).map(([key, p]) => {
+    const next = getNextPostTime(p.hour, p.min);
+    const ms = next - now;
+    const isToday = next.getDate() === now.getDate();
+    const timeStr = p.hour.toString().padStart(2,'0') + ':' + p.min.toString().padStart(2,'0') + ' MT';
+    return `<div style="background:rgba(20,10,40,0.6);border:1px solid rgba(255,255,255,0.06);padding:20px;text-align:center">
+      <div style="font-size:16px;margin-bottom:4px">${p.icon}</div>
+      <div style="font-size:9px;letter-spacing:3px;color:${p.color};margin-bottom:8px">${p.label.toUpperCase()}</div>
+      <div id="countdown-${key}" style="font-size:18px;font-family:var(--font-mono);color:var(--white);margin-bottom:6px">${formatCountdown(ms)}</div>
+      <div style="font-size:9px;color:var(--white-dim)">${isToday ? 'Today' : 'Tomorrow'} · ${timeStr}</div>
+    </div>`;
+  }).join('');
+}
+
+function updateCountdowns() {
+  const now = new Date();
+  Object.entries(PLATFORM_POST_TIMES).forEach(([key, p]) => {
+    const el = document.getElementById('countdown-' + key);
+    if (!el) return;
+    const next = getNextPostTime(p.hour, p.min);
+    el.textContent = formatCountdown(next - now);
+  });
+}
+
+// Start countdown ticker
+function initCountdowns() {
+  renderCountdowns();
+  setInterval(updateCountdowns, 1000);
+}
+
 // ── QUEUE SYSTEM ──
 const PLATFORM_TAGS = {
   youtube: ['AI tools', 'ChatGPT', 'artificial intelligence', 'AI tutorial', 'productivity', 'shorts', 'tech 2026', 'AI hacks', 'Claude AI', 'AI for beginners'],
@@ -2546,15 +2609,17 @@ function renderManualQueue() {
     <div style="background:rgba(30,15,50,0.4);border:1px solid rgba(240,160,32,0.15);margin-bottom:2px">
 
       <!-- Header -->
-      <div style="padding:20px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.05)">
-        <div>
-          <div style="font-size:14px;margin-bottom:4px">${item.title}</div>
-          <div style="font-size:10px;color:var(--white-dim)">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path}</div>
+      <div style="padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.05)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+          <div>
+            <div style="font-size:14px;margin-bottom:4px">${item.title}</div>
+            <div style="font-size:10px;color:var(--white-dim)">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path}</div>
+          </div>
+          <button class="script-btn" style="font-size:9px;padding:4px 12px" onclick="removeQueueItem(${idx})">✕ Remove</button>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="generatePlatformCaptions(${idx})">✦ Generate Captions</button>
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:transparent;border:1px solid rgba(240,160,32,0.3)" onclick="postQueueItem(${idx})">Post YouTube</button>
-          <button class="script-btn" style="padding:8px 12px;font-size:10px" onclick="removeQueueItem(${idx})">Remove</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button onclick="generatePlatformCaptions(${idx})" style="background:linear-gradient(135deg,rgba(240,160,32,0.2),rgba(180,100,255,0.2));border:1px solid rgba(240,160,32,0.4);color:var(--gold);padding:10px 20px;font-size:10px;letter-spacing:3px;cursor:pointer;font-family:var(--font-main)">✦ GENERATE CAPTIONS</button>
+          <button onclick="postQueueItem(${idx})" style="background:rgba(255,0,0,0.1);border:1px solid rgba(255,0,0,0.3);color:#FF4444;padding:10px 20px;font-size:10px;letter-spacing:3px;cursor:pointer;font-family:var(--font-main)">▶ POST TO YOUTUBE</button>
         </div>
       </div>
 
