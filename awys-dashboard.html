@@ -1,6 +1,6 @@
-<html lang="en" data-expander-initialized="true"><head><style>body {transition: opacity ease-in 0.2s; } 
-body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relative; } 
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>AWYS — AI While You Sleeping</title>
@@ -13,7 +13,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Raleway:wght@100;200;300;400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --black: #0e0c1a;
@@ -873,20 +873,20 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
   .health-fix:hover { background: rgba(107,175,138,0.1); }
 </style>
 </head>
-<body data-new-gr-c-s-check-loaded="14.1280.0" data-gr-ext-installed="">
+<body>
 
 <!-- SPLASH -->
-<div id="splash" class="hide">
+<div id="splash">
   <div class="splash-a">A</div>
   <div class="splash-sub">AI WHILE YOU <span class="splash-gold">SLEEPING</span></div>
   <div class="splash-bar"></div>
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="">Settings saved</div>
+<div id="toast"></div>
 
 <!-- APP -->
-<div id="app" class="show">
+<div id="app">
   <header>
     <div class="header-brand">
       <div id="health-dot" title="System Health" style="width:8px;height:8px;border-radius:50%;background:#6BAF8A;margin-right:8px;cursor:pointer;flex-shrink:0;transition:background 0.3s" onclick="showHealthReport()"></div>
@@ -894,20 +894,21 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
       <div class="header-name">AI While You Sleeping</div>
     </div>
     <div style="display:flex;align-items:center;gap:10px">
-      <button onclick="deployToGitHub()" id="deploy-btn" style="font-size: 9px; letter-spacing: 3px; background: transparent; border: 1px solid rgba(240, 160, 32, 0.3); color: var(--gold); padding: 5px 12px; cursor: pointer; font-family: var(--font-main);" disabled="">DEPLOYING...</button>
-      <div class="header-version" onclick="showTab('changelog')">v0.23</div>
+      <button onclick="deployToGitHub()" id="deploy-btn" style="font-size:9px;letter-spacing:3px;background:transparent;border:1px solid rgba(240,160,32,0.3);color:var(--gold);padding:5px 12px;cursor:pointer;font-family:var(--font-main)">DEPLOY</button>
+      <div class="header-version" onclick="showTab('changelog')">v0.24</div>
     </div>
   </header>
 
   <nav>
-    <button class="nav-tab" onclick="showTab('trends')">Trends &amp; Scripts</button>
+    <button class="nav-tab active" onclick="showTab('trends')">Trends & Scripts</button>
     <button class="nav-tab" onclick="showTab('accounts')">Accounts</button>
     <button class="nav-tab" onclick="showTab('queue')">Queue</button>
-    <button class="nav-tab active" onclick="showTab('video')">Video</button>
+    <button class="nav-tab" onclick="showTab('video')">Video</button>
     <button class="nav-tab" onclick="showTab('analytics')">Analytics</button>
     <button class="nav-tab" onclick="showTab('revenue')">Revenue</button>
     <button class="nav-tab" onclick="showTab('calendar')">Calendar</button>
     <button class="nav-tab" onclick="showTab('changelog')">Changelog</button>
+    <button class="nav-tab" onclick="showTab('system')">System</button>
     <button class="nav-tab" onclick="showTab('settings')">Settings</button>
   </nav>
 
@@ -916,7 +917,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
     <!-- TRENDS -->
     <div class="panel" id="panel-trends">
       <div class="section-header">
-        <span class="section-title">Trends &amp; Scripts</span>
+        <span class="section-title">Trends & Scripts</span>
         <button class="section-action" onclick="loadTrends()">Refresh Trends</button>
       </div>
 
@@ -924,15 +925,15 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
       <div class="stats-grid" style="margin-bottom:32px">
         <div class="stat-card">
           <div class="stat-label">Trending Topics</div>
-          <div class="stat-value" id="stat-topics">12</div>
+          <div class="stat-value" id="stat-topics">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">YouTube Shorts</div>
-          <div class="stat-value" id="stat-yt">6</div>
+          <div class="stat-value" id="stat-yt">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Google Trends</div>
-          <div class="stat-value" id="stat-gt">6</div>
+          <div class="stat-value" id="stat-gt">10</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Scripts Generated</div>
@@ -942,7 +943,9 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
 
       <!-- TRENDING NOW -->
       <div style="font-size:9px;letter-spacing:6px;color:var(--gold);margin-bottom:16px">TRENDING NOW</div>
-      <div id="trends-container" style="margin-bottom:40px"><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">I tested every AI writing tool — honest results</div><div class="trend-meta"><span class="trend-views">2.4M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="I tested every AI writing tool — honest results">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">This AI tool saved me 10 hours this week</div><div class="trend-meta"><span class="trend-views">1.8M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="This AI tool saved me 10 hours this week">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">ChatGPT vs Claude — which is actually better in 2026</div><div class="trend-meta"><span class="trend-views">3.1M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="ChatGPT vs Claude — which is actually better in 2026">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">Google Trends</div><div class="trend-title">5 AI tools that pay for themselves</div><div class="trend-meta"><span class="trend-views">900K views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="5 AI tools that pay for themselves">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">The AI tool nobody is talking about</div><div class="trend-meta"><span class="trend-views">2.2M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="The AI tool nobody is talking about">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">Google Trends</div><div class="trend-title">I used AI to run my entire business for a week</div><div class="trend-meta"><span class="trend-views">1.6M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="I used AI to run my entire business for a week">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">Best free AI tools in 2026</div><div class="trend-meta"><span class="trend-views">1.1M views</span><span class="trend-badge ">Rising</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="Best free AI tools in 2026">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">Google Trends</div><div class="trend-title">How to make money with AI tools</div><div class="trend-meta"><span class="trend-views">780K views</span><span class="trend-badge ">Rising</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="How to make money with AI tools">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">This AI writes better than me — full review</div><div class="trend-meta"><span class="trend-views">2.9M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="This AI writes better than me — full review">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">Google Trends</div><div class="trend-title">AI tools for content creators — full breakdown</div><div class="trend-meta"><span class="trend-views">1.4M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="AI tools for content creators — full breakdown">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">YouTube</div><div class="trend-title">Midjourney vs DALL-E vs Stable Diffusion 2026</div><div class="trend-meta"><span class="trend-views">1.9M views</span><span class="trend-badge hot">Trending</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="Midjourney vs DALL-E vs Stable Diffusion 2026">Generate Script →</button></div><div class="trend-card"><div class="trend-platform">Google Trends</div><div class="trend-title">I automated my entire workflow with AI</div><div class="trend-meta"><span class="trend-views">1.2M views</span><span class="trend-badge ">Rising</span></div><button class="trend-generate" onclick="prefillScript(this.dataset.title)" data-title="I automated my entire workflow with AI">Generate Script →</button></div></div>
+      <div id="trends-container" style="margin-bottom:40px">
+        <div class="empty"><div class="empty-text">Hit Refresh Trends to load<span class="loading-dots"></span></div></div>
+      </div>
 
       <!-- GENERATE SCRIPT -->
       <div class="generate-box">
@@ -965,7 +968,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
             <label style="font-size:10px;letter-spacing:3px;color:var(--white-dim);display:block;margin-bottom:8px">LENGTH</label>
             <select class="video-select" id="script-length">
               <option value="100">Short — 30 sec</option>
-              <option value="150" selected="">Standard — 45 sec</option>
+              <option value="150" selected>Standard — 45 sec</option>
               <option value="200">Long — 60 sec</option>
             </select>
           </div>
@@ -1268,7 +1271,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
       <div class="changelog-list">
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.23</div>
+          <div class="changelog-version">v0.24</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 3:48 PM MTC</div>
             <ul class="changelog-changes">
@@ -1290,7 +1293,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
         </div>
 
         <div class="changelog-item">
-          <div class="changelog-version">v0.23</div>
+          <div class="changelog-version">v0.24</div>
           <div class="changelog-content">
             <div class="changelog-date">April 4, 2026 at 1:30 PM MTC</div>
             <ul class="changelog-changes">
@@ -1492,7 +1495,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
     </div>
 
     <!-- VIDEO -->
-    <div class="panel active" id="panel-video">
+    <div class="panel" id="panel-video">
       <div class="section-header">
         <span class="section-title">Video Studio</span>
         <button class="section-action" onclick="runAutoPilot()">Auto-Pilot →</button>
@@ -1543,7 +1546,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
           <div class="checklist-item" id="check-4">
             <div class="check-num" id="check-num-4">4</div>
             <div class="check-body">
-              <div class="check-title">Review &amp; post</div>
+              <div class="check-title">Review & post</div>
               <div class="check-sub">Title, description and tags are auto-filled from your script. Review them below then click Add to Queue or Upload Now.</div>
             </div>
             <div class="check-badge" id="check-badge-4">TODO</div>
@@ -1625,13 +1628,72 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
       <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px;margin-bottom:24px">
         <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:12px">TRANSFER VIDEO TO VPS</div>
         <div style="font-size:11px;color:var(--white-dim);margin-bottom:12px">Run this command on your Mac to transfer your downloaded InVideo video to the VPS:</div>
-        <div style="background:rgba(0,0,0,0.4);padding:16px;font-family:monospace;font-size:12px;color:var(--gold);border:1px solid rgba(240,160,32,0.15);word-break:break-all" id="scp-command">scp ~/Downloads/https://course-watches-learners-checking.trycloudflare.com root@187.124.240.101:/root/awys/video.mp4</div>
+        <div style="background:rgba(0,0,0,0.4);padding:16px;font-family:monospace;font-size:12px;color:var(--gold);border:1px solid rgba(240,160,32,0.15);word-break:break-all" id="scp-command">
+          scp ~/Downloads/YOUR_VIDEO.mp4 root@187.124.240.101:/root/awys/video.mp4
+        </div>
         <div style="margin-top:12px">
           <input id="scp-filename" class="settings-input" placeholder="Enter your video filename from Downloads..." oninput="updateScpCommand(this.value)" style="width:100%">
         </div>
       </div>
 
       <div id="video-result"></div>
+    </div>
+
+    <!-- SYSTEM -->
+    <div class="panel" id="panel-system">
+      <div class="section-header">
+        <span class="section-title">System Health</span>
+        <button class="section-action" onclick="runFullSystemCheck()">Run All Checks</button>
+      </div>
+
+      <!-- OVERALL STATUS BAR -->
+      <div id="system-status-bar" style="padding:20px 24px;margin-bottom:32px;border:1px solid rgba(240,160,32,0.2);background:rgba(30,15,50,0.4);display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div id="system-status-dot" style="width:12px;height:12px;border-radius:50%;background:#6BAF8A"></div>
+          <div id="system-status-text" style="font-size:13px">Running checks...</div>
+        </div>
+        <div id="system-last-check" style="font-size:10px;color:var(--white-dim);letter-spacing:2px">Never checked</div>
+      </div>
+
+      <!-- CHECK CATEGORIES -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;margin-bottom:32px">
+
+        <!-- DASHBOARD INTEGRITY -->
+        <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px">
+          <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px">DASHBOARD INTEGRITY</div>
+          <div id="checks-dashboard"></div>
+        </div>
+
+        <!-- BACKEND & APIs -->
+        <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px">
+          <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px">BACKEND & APIs</div>
+          <div id="checks-backend"></div>
+        </div>
+
+        <!-- CONFIGURATION -->
+        <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px">
+          <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px">CONFIGURATION</div>
+          <div id="checks-config"></div>
+        </div>
+
+        <!-- AUTOMATION -->
+        <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px">
+          <div style="font-size:9px;letter-spacing:4px;color:var(--gold);margin-bottom:16px">AUTOMATION</div>
+          <div id="checks-automation"></div>
+        </div>
+
+      </div>
+
+      <!-- AUTO-FIX LOG -->
+      <div style="background:rgba(30,15,50,0.35);border:1px solid rgba(240,160,32,0.12);padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:9px;letter-spacing:4px;color:var(--gold)">AUTO-FIX LOG</div>
+          <button class="script-btn" onclick="runAutoFix()">Auto-Fix All Issues</button>
+        </div>
+        <div id="autofix-log" style="font-size:11px;color:var(--white-dim);line-height:2;font-family:var(--font-mono)">
+          No fixes applied yet.
+        </div>
+      </div>
     </div>
 
     <!-- SETTINGS -->
@@ -1723,7 +1785,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
           </div>
           <select class="settings-input" id="script-time" style="width:auto">
             <option value="08:00">8:00 AM</option>
-            <option value="09:00" selected="">9:00 AM</option>
+            <option value="09:00" selected>9:00 AM</option>
             <option value="10:00">10:00 AM</option>
             <option value="11:00">11:00 AM</option>
           </select>
@@ -1735,7 +1797,7 @@ body[unresolved] {opacity: 0; display: block; overflow: hidden; position: relati
           </div>
           <select class="settings-input" id="yt-post-time" style="width:auto">
             <option value="11:00">11:00 AM</option>
-            <option value="12:00" selected="">12:00 PM</option>
+            <option value="12:00" selected>12:00 PM</option>
             <option value="13:00">1:00 PM</option>
             <option value="19:00">7:00 PM</option>
             <option value="20:00">8:00 PM</option>
@@ -3340,6 +3402,12 @@ async function deployToGitHub() {
   const btn = document.getElementById('deploy-btn');
   if (btn) { btn.textContent = 'DEPLOYING...'; btn.disabled = true; }
 
+  // Safety timeout — reset button after 30 seconds no matter what
+  const safetyTimer = setTimeout(() => {
+    if (btn) { btn.textContent = 'DEPLOY'; btn.style.color = 'var(--gold)'; btn.style.borderColor = 'rgba(240,160,32,0.3)'; btn.disabled = false; }
+    showToast('Deploy timed out — try again');
+  }, 30000);
+
   try {
     // Get current file SHA (needed for update)
     const getRes = await fetch(`https://api.github.com/repos/${repo}/contents/${filename}`, {
@@ -3385,21 +3453,26 @@ async function deployToGitHub() {
     const pushData = await pushRes.json();
 
     if (pushRes.ok) {
+      clearTimeout(safetyTimer);
       showToast('Deployed to GitHub! Live in ~60 seconds');
-      if (btn) { btn.textContent = '✓ DEPLOYED'; btn.style.color = 'var(--success)'; btn.style.borderColor = 'rgba(107,175,138,0.4)'; }
+      if (btn) { btn.textContent = '✓ DEPLOYED'; btn.style.color = 'var(--success)'; btn.style.borderColor = 'rgba(107,175,138,0.4)'; btn.disabled = false; }
       setTimeout(() => {
-        if (btn) { btn.textContent = 'DEPLOY'; btn.style.color = 'var(--gold)'; btn.style.borderColor = 'rgba(240,160,32,0.3)'; btn.disabled = false; }
+        if (btn) { btn.textContent = 'DEPLOY'; btn.style.color = 'var(--gold)'; btn.style.borderColor = 'rgba(240,160,32,0.3)'; }
       }, 5000);
     } else {
-      showToast('Deploy failed: ' + (pushData.message || 'Unknown error'));
+      const errMsg = pushData.message || 'Unknown error';
+      showToast('Deploy failed: ' + errMsg);
       if (btn) { btn.textContent = 'DEPLOY FAILED'; btn.style.color = 'var(--danger)'; btn.disabled = false; }
       setTimeout(() => {
         if (btn) { btn.textContent = 'DEPLOY'; btn.style.color = 'var(--gold)'; btn.disabled = false; }
       }, 3000);
+      // Auto-open health report to show the issue
+      showHealthReport();
     }
   } catch(e) {
+    clearTimeout(safetyTimer);
     showToast('Deploy error: ' + e.message);
-    if (btn) { btn.textContent = 'DEPLOY'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'DEPLOY'; btn.style.color = 'var(--gold)'; btn.disabled = false; }
   }
 }
 
@@ -3477,7 +3550,40 @@ async function runHealthCheck() {
     report.push({label:'Claude API Key', status:'ok', msg:'Configured'});
   }
 
-  // 5. Check VPS connectivity
+  // 5. Check GitHub token
+  if (settings.githubToken) {
+    try {
+      const ghRes = await fetch('https://api.github.com/repos/' + (settings.githubRepo || 'qspencer-4/awys-dashboard'), {
+        headers: {
+          'Authorization': 'token ' + settings.githubToken,
+          'Accept': 'application/vnd.github.v3+json'
+        },
+        signal: AbortSignal.timeout(5000)
+      });
+      const ghData = await ghRes.json();
+      if (ghRes.ok && ghData.permissions?.push) {
+        report.push({label:'GitHub Token', status:'ok', msg:'Valid — push access confirmed'});
+      } else if (ghRes.ok && !ghData.permissions?.push) {
+        healthIssues.push({type:'gh_no_push', desc:'GitHub token missing repo write permission', fixable: false});
+        report.push({label:'GitHub Token', status:'err', msg:'No write access — regenerate with repo scope'});
+      } else if (ghRes.status === 401) {
+        healthIssues.push({type:'gh_invalid', desc:'GitHub token invalid or expired', fixable: false});
+        report.push({label:'GitHub Token', status:'err', msg:'Invalid or expired — regenerate token'});
+      } else if (ghRes.status === 403) {
+        healthIssues.push({type:'gh_forbidden', desc:'GitHub token lacks repo permission', fixable: false});
+        report.push({label:'GitHub Token', status:'err', msg:'Permission denied — needs repo scope checked'});
+      } else {
+        report.push({label:'GitHub Token', status:'warn', msg:'Could not verify: ' + ghRes.status});
+      }
+    } catch(e) {
+      report.push({label:'GitHub Token', status:'warn', msg:'Could not verify — check internet'});
+    }
+  } else {
+    healthIssues.push({type:'no_gh_token', desc:'GitHub token not configured', fixable: false});
+    report.push({label:'GitHub Token', status:'warn', msg:'Not configured — add in Settings to enable auto-deploy'});
+  }
+
+  // 6. Check VPS connectivity
   if (settings.vpsUrl) {
     try {
       const res = await fetch(settings.vpsUrl + '/health', {signal: AbortSignal.timeout(5000)});
@@ -3626,5 +3732,5 @@ window.addEventListener('beforeinstallprompt', e => {
       </div>
     </div>
   </div>
-
-<veepn-lock-screen><style>@font-face{font-family:FigtreeVF;src:url(chrome-extension://majdfhpaihoncoakbjgbdhglocklcgno/fonts/FigtreeVF.woff2) format("woff2 supports variations"),url(chrome-extension://majdfhpaihoncoakbjgbdhglocklcgno/fonts/FigtreeVF.woff2) format("woff2-variations");font-weight:100 1000;font-display:swap}</style></veepn-lock-screen></body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
+</body>
+</html>
