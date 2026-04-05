@@ -1416,18 +1416,19 @@
           <textarea id="video-prompt" class="video-input" rows="3" placeholder="Paste your script or describe the video..."></textarea>
         </div>
         <div class="video-form-row">
-          <select class="video-select" id="video-model">
-            <option value="wavespeedai/wan-2.1-t2v-480p">Wan 2.1 — Budget ~$0.02/video</option>
-            <option value="minimax/hailuo-02-fast">Hailuo 02 Fast — ~$0.50/video</option>
-            <option value="minimax/hailuo-02">Hailuo 02 — Best quality ~$1/video</option>
+          <select class="video-select" id="video-style">
+            <option value="anime">Anime / Cartoon — Vibrant neon style</option>
+            <option value="realistic">Realistic — Stock footage style</option>
+            <option value="futuristic">Futuristic — Sci-fi tech aesthetic</option>
+            <option value="minimal">Minimal — Clean modern look</option>
           </select>
-          <select class="video-select" id="video-duration">
-            <option value="5">5 seconds</option>
-            <option value="6" selected>6 seconds</option>
-            <option value="8">8 seconds</option>
-            <option value="10">10 seconds</option>
+          <select class="video-select" id="video-clips">
+            <option value="1">1 clip — 5 sec ~$0.02</option>
+            <option value="4">4 clips — 20 sec ~$0.08</option>
+            <option value="6" selected>6 clips — 30 sec ~$0.12</option>
+            <option value="10">10 clips — 50 sec ~$0.20</option>
           </select>
-          <button class="gen-btn" id="video-gen-btn" onclick="generateVideo()">Generate Video</button>
+          <button class="gen-btn" id="video-gen-btn" onclick="generateMultiClipVideo()">Generate Video</button>
         </div>
         <div class="progress-bar-wrap" id="video-progress-wrap" style="display:none">
           <div class="progress-bar-fill" id="video-progress-fill"></div>
@@ -1439,20 +1440,20 @@
         <div class="pipeline-step" id="step-script">
           <div class="step-num">STEP 01</div>
           <div class="step-title">Script</div>
-          <div class="step-desc">AI generates script based on trending topic</div>
+          <div class="step-desc">AI generates script from trending topic</div>
           <div class="step-status" id="step-script-status">Ready</div>
         </div>
         <div class="pipeline-step" id="step-video">
           <div class="step-num">STEP 02</div>
-          <div class="step-title">Video Generation</div>
-          <div class="step-desc">Replicate AI renders video from script</div>
+          <div class="step-title">Clip Generation</div>
+          <div class="step-desc">Generates multiple cartoon clips via Replicate</div>
           <div class="step-status" id="step-video-status">Waiting</div>
         </div>
-        <div class="pipeline-step" id="step-thumb">
+        <div class="pipeline-step" id="step-stitch">
           <div class="step-num">STEP 03</div>
-          <div class="step-title">Thumbnail</div>
-          <div class="step-desc">Auto-generated from video title</div>
-          <div class="step-status" id="step-thumb-status">Waiting</div>
+          <div class="step-title">Stitch + Captions</div>
+          <div class="step-desc">FFmpeg stitches clips and adds captions</div>
+          <div class="step-status" id="step-stitch-status">Waiting</div>
         </div>
         <div class="pipeline-step" id="step-upload">
           <div class="step-num">STEP 04</div>
@@ -2045,6 +2046,149 @@ async function loadYouTubeStats() {
   } catch(e) {}
 }
 
+
+
+// ── STYLE PRESETS ──
+const STYLE_PROMPTS = {
+  anime: 'anime style, vibrant neon colors, futuristic aesthetic, glowing cyan and gold color palette, dynamic camera movement, expressive characters, holographic interfaces, cinematic lighting, ultra detailed illustration, vertical 9:16',
+  realistic: 'cinematic realistic footage, modern tech environment, professional lighting, dynamic camera angles, vertical 9:16 format, high quality',
+  futuristic: 'sci-fi futuristic aesthetic, neon lights, holographic displays, cyberpunk style, dark background with glowing elements, sleek technology, vertical 9:16',
+  minimal: 'clean minimal aesthetic, white and dark tones, modern design, simple geometric shapes, professional corporate style, vertical 9:16'
+};
+
+const SCENE_TEMPLATES = {
+  anime: [
+    'anime style character with glowing eyes discovering {topic} on a holographic screen, neon cyan atmosphere, dynamic zoom in',
+    'anime style split screen showing before and after using {topic}, vibrant colors, dramatic lighting',
+    'anime style character reacting with amazement to {topic} results, sparkle effects, gold and cyan palette',
+    'anime style close up of glowing holographic interface showing {topic} features, neon lights',
+    'anime style character holding phone showing {topic} app, futuristic city background, vibrant colors',
+    'anime style victory pose after using {topic}, confetti explosion, bright celebration colors'
+  ],
+  realistic: [
+    'person discovering {topic} on laptop, natural lighting, modern home office, genuine reaction',
+    'close up of screen showing {topic} interface, hands typing, professional environment',
+    'person smiling looking at phone showing {topic} results, bright natural light',
+    'split screen comparison showing old vs new way using {topic}, clean minimal aesthetic',
+    'person sharing {topic} with friend, excited reaction, warm lighting',
+    'close up of amazing results from {topic} on screen, clean modern desk'
+  ],
+  futuristic: [
+    'cyberpunk character accessing {topic} through holographic display, neon city background',
+    'futuristic interface showing {topic} data visualization, glowing elements, dark background',
+    'sci-fi aesthetic showing {topic} AI neural network visualization, blue and purple lights',
+    'cyborg hand interacting with {topic} hologram, chrome and neon aesthetic',
+    'futuristic dashboard showing {topic} metrics, sleek design, glowing accents',
+    'AI robot assistant demonstrating {topic} capabilities, clean white and chrome design'
+  ],
+  minimal: [
+    'clean minimal animation showing {topic} concept, white background, simple shapes',
+    'modern flat design illustration of {topic} workflow, clean colors',
+    'simple animated text revealing {topic} key benefit, minimal aesthetic',
+    'clean product showcase of {topic} interface, white space, minimal design',
+    'modern infographic animation showing {topic} statistics, clean typography',
+    'minimal split screen showing {topic} before and after, clean white design'
+  ]
+};
+
+// ── MULTI-CLIP VIDEO GENERATION ──
+async function generateMultiClipVideo() {
+  const prompt = document.getElementById('video-prompt').value.trim();
+  const vpsUrl = state.settings.vpsUrl;
+  const replicateKey = state.settings.replicateKey;
+  const style = document.getElementById('video-style').value;
+  const numClips = parseInt(document.getElementById('video-clips').value);
+
+  if (!prompt) { showToast('Enter a topic or script first'); return; }
+  if (!vpsUrl) { showToast('Add VPS Backend URL in Settings'); return; }
+  if (!replicateKey) { showToast('Add Replicate API key in Settings'); return; }
+
+  const btn = document.getElementById('video-gen-btn');
+  btn.disabled = true; btn.textContent = 'Generating...';
+
+  document.getElementById('video-progress-wrap').style.display = 'block';
+  document.getElementById('video-result').innerHTML = '';
+  setStepStatus('video', 'running', 'Generating clips...');
+  setProgress(5);
+
+  // Extract topic from prompt
+  const topic = prompt.length > 50 ? prompt.substring(0, 50) : prompt;
+  const scenes = SCENE_TEMPLATES[style] || SCENE_TEMPLATES.anime;
+  const stylePrefix = STYLE_PROMPTS[style] || STYLE_PROMPTS.anime;
+
+  setVideoMsg('Starting ' + numClips + ' clip generation...');
+
+  try {
+    const res = await fetch(vpsUrl + '/video/generate-multi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic: topic,
+        style: style,
+        style_prompt: stylePrefix,
+        scenes: scenes.slice(0, numClips).map(s => s.replace(/{topic}/g, topic)),
+        num_clips: numClips,
+        replicate_key: replicateKey,
+        script: prompt
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) { showToast('Error: ' + data.error); resetVideoBtn(); return; }
+
+    // Poll for all clips to complete
+    pollMultiClipStatus(data.job_id, replicateKey, vpsUrl, numClips);
+
+  } catch(e) {
+    showToast('Cannot reach VPS — check Backend URL in Settings');
+    resetVideoBtn();
+  }
+}
+
+async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
+  let dots = 0;
+  const interval = setInterval(async () => {
+    try {
+      const res = await fetch(vpsUrl + '/video/job-status/' + jobId + '?key=' + replicateKey);
+      const data = await res.json();
+
+      const completed = data.completed || 0;
+      const total = data.total || numClips;
+      const pct = Math.min(10 + (completed / total) * 70, 80);
+      setProgress(pct);
+      setVideoMsg('Clips complete: ' + completed + ' / ' + total);
+      setStepStatus('video', 'running', completed + '/' + total + ' clips done');
+
+      if (data.status === 'stitching') {
+        setStepStatus('video', 'done', 'All clips ready');
+        setStepStatus('stitch', 'running', 'Stitching...');
+        setProgress(85);
+        setVideoMsg('Stitching clips together...');
+      }
+
+      if (data.status === 'complete' && data.output_url) {
+        clearInterval(interval);
+        setProgress(100);
+        setStepStatus('stitch', 'done', 'Complete');
+        setVideoMsg('Video ready!');
+        showVideoPreview(data.output_url);
+        showVideoActions();
+        resetVideoBtn();
+      }
+
+      if (data.status === 'error') {
+        clearInterval(interval);
+        showToast('Error: ' + (data.error || 'Generation failed'));
+        setStepStatus('video', 'error', 'Failed');
+        resetVideoBtn();
+      }
+
+    } catch(e) {
+      dots++;
+      if (dots > 60) { clearInterval(interval); showToast('Timed out — try again'); resetVideoBtn(); }
+    }
+  }, 5000);
+}
 
 // ── VIDEO GENERATION ──
 let currentPredictionId = null;
