@@ -1874,6 +1874,8 @@ window.addEventListener('load', () => {
     document.getElementById('splash').classList.add('hide');
     document.getElementById('app').classList.add('show');
     loadTrends();
+    // Check YouTube status on load so it persists across refreshes
+    checkYouTubeStatus();
   }, 2800);
 });
 
@@ -1946,6 +1948,10 @@ function saveSettings() {
   state.settings.autopilotEnabled = document.getElementById('autopilot-enabled')?.value === 'true';
   localStorage.setItem('awys-settings', JSON.stringify(state.settings));
   showToast('Settings saved');
+  // Recheck YouTube status with new settings
+  if (document.getElementById('panel-accounts') && document.getElementById('panel-accounts').classList.contains('active')) {
+    checkYouTubeStatus();
+  }
 }
 
 // ── TRENDS ──
