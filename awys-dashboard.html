@@ -1417,7 +1417,7 @@
         </div>
         <div class="video-form-row">
           <select class="video-select" id="video-model">
-            <option value="wan-video/wan2.1-t2v-480p">Wan 2.1 — Budget ~$0.02/video</option>
+            <option value="wavespeedai/wan-2.1-t2v-480p">Wan 2.1 — Budget ~$0.02/video</option>
             <option value="minimax/hailuo-02-fast">Hailuo 02 Fast — ~$0.50/video</option>
             <option value="minimax/hailuo-02">Hailuo 02 — Best quality ~$1/video</option>
           </select>
@@ -1546,7 +1546,7 @@
 <script>
 // ── STATE ──
 const state = {
-  trends: [], scripts: [], queue: [], currentScript: null, scriptCount: 0,
+  trends: [], scripts: [], queue: [], currentScript: null, scriptCount: 0, lastVideoUrl: null,
   settings: { ytKey: '', antKey: '', vpsUrl: '', scriptLen: 150, refreshInterval: 30 }
 };
 
@@ -2104,9 +2104,14 @@ function pollVideoStatus(replicateKey, vpsUrl) {
       if (data.status === 'succeeded' && data.output) {
         clearInterval(videoPollingInterval);
         setProgress(90);
-        setVideoMsg('Downloading video...');
+        setVideoMsg('Video ready — downloading...');
 
         const videoUrl = Array.isArray(data.output) ? data.output[0] : data.output;
+
+        // Show preview immediately from Replicate CDN
+        showVideoPreview(videoUrl);
+
+        // Download to VPS in background
         const dlRes = await fetch(vpsUrl + '/video/download', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2117,9 +2122,9 @@ function pollVideoStatus(replicateKey, vpsUrl) {
         if (dlData.success) {
           setProgress(100);
           setStepStatus('video', 'done', 'Complete');
-          setStepStatus('thumb', 'done', 'Generated');
-          setVideoMsg('Video ready — uploading to YouTube...');
-          await autoUploadVideo();
+          setStepStatus('thumb', 'done', 'Ready');
+          setVideoMsg('Video ready to upload');
+          showVideoActions();
         }
       } else if (data.status === 'failed') {
         clearInterval(videoPollingInterval);
@@ -2190,6 +2195,84 @@ function setVideoMsg(msg) {
 function resetVideoBtn() {
   const btn = document.getElementById('video-gen-btn');
   if (btn) { btn.disabled = false; btn.textContent = 'Generate Video'; }
+}
+
+function showVideoPreview(url) {
+  const result = document.getElementById('video-result');
+  if (!result) return;
+  result.innerHTML =
+    '<div style="margin-top:24px;border:1px solid rgba(240,160,32,0.3);background:rgba(30,15,50,0.5);">' +
+    '<div style="padding:16px 20px;border-bottom:1px solid rgba(240,160,32,0.15);font-size:9px;letter-spacing:6px;color:var(--gold)">VIDEO PREVIEW</div>' +
+    '<div style="padding:20px;display:flex;justify-content:center;background:#000">' +
+    '<video controls autoplay muted loop playsinline style="max-height:500px;max-width:100%;border-radius:2px">' +
+    '<source src="' + url + '" type="video/mp4">' +
+    '</video>' +
+    '</div>' +
+    '<div style="padding:16px 20px;display:flex;gap:20px;align-items:center" id="video-action-bar">' +
+    '<div style="font-size:11px;color:var(--white-dim)">Generating thumbnail...</div>' +
+    '</div>' +
+    '</div>';
+  state.lastVideoUrl = url;
+}
+
+function showVideoActions() {
+  const bar = document.getElementById('video-action-bar');
+  if (!bar) return;
+  bar.innerHTML =
+    '<button class="gen-btn" onclick="uploadGeneratedVideo()" style="padding:10px 20px">Upload to YouTube</button>' +
+    '<button class="script-btn" onclick="regenerateVideo()" style="margin-left:8px">Regenerate</button>' +
+    '<button class="script-btn" onclick="downloadVideo()" style="margin-left:8px">Download</button>';
+}
+
+async function uploadGeneratedVideo() {
+  const vpsUrl = state.settings.vpsUrl;
+  const prompt = document.getElementById('video-prompt').value.trim();
+  const title = prompt.length > 80 ? prompt.substring(0, 77) + '...' : prompt;
+  const bar = document.getElementById('video-action-bar');
+  if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--gold);letter-spacing:3px">Uploading to YouTube...</div>';
+  setStepStatus('upload', 'running', 'Uploading...');
+  try {
+    const res = await fetch(vpsUrl + '/youtube/upload-direct', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: title,
+        description: prompt + '\n\nFollow for daily AI tool reviews — new tools every week.\n\n#AItools #shorts #ChatGPT #artificialintelligence #AItutorial #productivity',
+        tags: ['AI tools', 'ChatGPT', 'artificial intelligence', 'shorts', 'AI tutorial', 'productivity'],
+        video_path: '/root/awys/generated_video.mp4',
+        privacy: 'public'
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      setStepStatus('upload', 'done', 'Posted');
+      if (bar) bar.innerHTML =
+        '<div style="font-size:11px;color:var(--success);letter-spacing:3px;margin-right:16px">✓ LIVE ON YOUTUBE</div>' +
+        '<a href="' + data.url + '" target="_blank" style="color:var(--gold);font-size:12px">' + data.url + '</a>';
+      showToast('Video live on YouTube!');
+      loadAnalytics();
+    } else {
+      if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--danger)">' + (data.error || 'Upload failed') + '</div><button class="script-btn" onclick="uploadGeneratedVideo()" style="margin-left:12px">Retry</button>';
+      setStepStatus('upload', 'error', 'Failed');
+    }
+  } catch(e) {
+    if (bar) bar.innerHTML = '<div style="font-size:11px;color:var(--danger)">Cannot reach VPS</div><button class="script-btn" onclick="uploadGeneratedVideo()" style="margin-left:12px">Retry</button>';
+  }
+}
+
+function regenerateVideo() {
+  document.getElementById('video-result').innerHTML = '';
+  generateVideo();
+}
+
+function downloadVideo() {
+  if (state.lastVideoUrl) {
+    const a = document.createElement('a');
+    a.href = state.lastVideoUrl;
+    a.download = 'awys_video.mp4';
+    a.target = '_blank';
+    a.click();
+  }
 }
 
 // ── AUTO-PILOT ──
