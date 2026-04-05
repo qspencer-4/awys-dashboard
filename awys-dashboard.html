@@ -2149,7 +2149,7 @@ async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
   let dots = 0;
   const interval = setInterval(async () => {
     try {
-      const res = await fetch(vpsUrl + '/video/job-status/' + jobId + '?key=' + replicateKey);
+      const res = await fetch(vpsUrl + '/video/job-status/' + jobId + '?clips=1&key=' + replicateKey);
       const data = await res.json();
 
       const completed = data.completed || 0;
@@ -2162,9 +2162,9 @@ async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
       if (data.status === 'stitching') {
         setStepStatus('video', 'done', 'All clips ready');
         setStepStatus('stitch', 'running', 'Stitching...');
-        setStepStatus('upload', 'waiting', 'Waiting');
-        setProgress(85);
-        setVideoMsg('Stitching clips together with FFmpeg...');
+        setStepStatus('upload', '', 'Waiting');
+        setProgress(88);
+        setVideoMsg('Stitching ' + data.total + ' clips together...');
       }
 
       if (data.status === 'complete' && data.output_url) {
@@ -2173,8 +2173,10 @@ async function pollMultiClipStatus(jobId, replicateKey, vpsUrl, numClips) {
         setStepStatus('video', 'done', 'All clips done');
         setStepStatus('stitch', 'done', 'Complete');
         setVideoMsg('Video ready!');
-        // Use the VPS tunnel URL to serve the video directly
-        const previewUrl = vpsUrl + '/video/latest?t=' + Date.now();
+        // Use clip_urls from job for preview (direct Replicate CDN — no CORS issues)
+        const previewUrl = data.clip_urls && data.clip_urls.length > 0
+          ? data.clip_urls[0]
+          : (vpsUrl + '/video/latest?t=' + Date.now());
         showVideoPreview(previewUrl);
         showVideoActions();
         resetVideoBtn();
