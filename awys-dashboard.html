@@ -1873,6 +1873,7 @@ window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('splash').classList.add('hide');
     document.getElementById('app').classList.add('show');
+    showTab('trends');
     loadTrends();
     // Check YouTube status on load so it persists across refreshes
     checkYouTubeStatus();
@@ -1890,7 +1891,7 @@ function showTab(tab) {
     const onclick = t.getAttribute('onclick') || '';
     if (onclick.includes("'" + tab + "'")) t.classList.add('active');
   });
-  if (tab === 'trends') { renderTrends(); renderScripts(); }
+  if (tab === 'trends') { renderTrends(); renderScripts(); if (!state.trends.length) loadTrends(); }
   if (tab === 'queue') { renderManualQueue(); renderWeeklyQueue(); renderCountdowns(); if (!window._countdownInterval) { window._countdownInterval = setInterval(updateCountdowns, 1000); } }
   if (tab === 'video') { loadSchedulerStatus(); }
   if (tab === 'analytics') { loadAnalytics(); }
@@ -1959,8 +1960,12 @@ async function loadTrends() {
   const container = document.getElementById('trends-container');
   if (container) container.innerHTML = '<div class="empty"><div class="empty-text">Scraping Reddit, Product Hunt, Hacker News<span class="loading-dots"></span></div></div>';
 
+  // Reload settings fresh from localStorage every time
+  const saved = JSON.parse(localStorage.getItem('awys-settings') || '{}');
+  if (saved.vpsUrl) state.settings.vpsUrl = saved.vpsUrl;
+
   const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) { showSampleTrends(); return; }
+  if (!vpsUrl) { showSampleTrends(); showToast('Add VPS URL in Settings'); return; }
 
   try {
     const res = await fetch(vpsUrl + '/trends/live', {signal: AbortSignal.timeout(30000)});
