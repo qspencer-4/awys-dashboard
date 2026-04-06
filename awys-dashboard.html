@@ -2519,23 +2519,45 @@ function getWeekDates() {
 
 function extractMetaFromScript(script) {
   if (!script) return { title: '', description: '', tags: [] };
-  
+
   // Extract HOOK for title
   const hookMatch = script.match(/HOOK:\s*(.+)/i);
-  const hook = hookMatch ? hookMatch[1].trim().replace(/\*+/g, '') : '';
-  
-  // Extract main script body for description  
-  const scriptMatch = script.match(/SCRIPT:\s*([\s\S]+?)(?:CTA:|INVIDEO|TAGS:|$)/i);
-  const scriptBody = scriptMatch ? scriptMatch[1].trim().substring(0, 200) : '';
-  
-  // Extract tags
+  const hook = hookMatch ? hookMatch[1].trim().replace(/\*+/g, '').replace(/\[.*?\]/g, '').trim() : '';
+
+  // Extract CTA
+  const ctaMatch = script.match(/CTA:\s*(.+)/i);
+  const cta = ctaMatch ? ctaMatch[1].trim() : 'Follow @aiwhileyousleeping for daily AI tool reviews';
+
+  // Extract metaphoric character for context
+  const charMatch = script.match(/METAPHORIC CHARACTER:\s*(.+)/i);
+  const character = charMatch ? charMatch[1].trim() : '';
+
+  // Extract topic from hook or character description
+  const topicHint = hook || character || '';
+
+  // Build a clean YouTube description — NOT the script body
+  const cleanTitle = hook.replace(/['"*]/g, '').trim();
+  const description = [
+    cleanTitle ? cleanTitle + '.' : '',
+    '',
+    "I tested this AI tool so you do not have to. Watch to find out what happened.",
+    '',
+    cta,
+    '',
+    '🔔 Subscribe for daily AI tool reviews',
+    '👍 Like if this was helpful',
+    '💬 Comment which AI tool you want reviewed next',
+    '',
+    'Follow @aiwhileyousleeping on TikTok, Instagram, and Facebook for more daily AI content.'
+  ].filter(Boolean).join('\n');
+
+  // Extract tags - only from TAGS section, not from script body
   const tagsMatch = script.match(/TAGS:\s*(.+)/i);
   const tagsStr = tagsMatch ? tagsMatch[1] : '';
-  const tags = tagsStr.split(/\s+/).filter(t => t.startsWith('#')).map(t => t.replace('#', ''));
-  
-  const title = hook || script.substring(0, 80);
-  const description = scriptBody || script.substring(0, 200);
-  
+  const tags = tagsStr.split(/[\s,]+/).filter(t => t.replace('#','')).map(t => t.replace('#', ''));
+
+  const title = cleanTitle || 'AI Tool Review — AI While You Sleeping';
+
   return { title, description, tags: tags.length > 0 ? tags : PLATFORM_TAGS.youtube };
 }
 
