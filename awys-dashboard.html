@@ -3713,6 +3713,79 @@ function updateAnalyticsUI(data) {
 
 
 
+
+// ── SETTINGS BACKUP / RESTORE ──
+async function backupSettingsToVPS() {
+  const vpsUrl = document.getElementById('vps-url')?.value.trim();
+  if (!vpsUrl) { showToast('Enter VPS URL first'); return; }
+
+  // Save sensitive keys masked - only save non-sensitive settings to VPS
+  const settings = JSON.parse(localStorage.getItem('awys-settings') || '{}');
+  
+  // Store everything except API keys for security
+  const backup = {
+    vpsUrl: settings.vpsUrl || vpsUrl,
+    githubRepo: settings.githubRepo || 'qspencer-4/awys-dashboard',
+    githubFilename: settings.githubFilename || 'awys-dashboard.html',
+    phoneNumber: settings.phoneNumber || '',
+    scriptTime: settings.scriptTime || '09:00',
+    ytPostTime: settings.ytPostTime || '12:00',
+    autopilotEnabled: settings.autopilotEnabled || false,
+    backed_up_at: new Date().toISOString()
+  };
+
+  try {
+    const res = await fetch(vpsUrl + '/settings/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: backup })
+    });
+    const data = await res.json();
+    if (data.success) showToast('Settings backed up to server');
+    else showToast('Backup failed: ' + data.error);
+  } catch(e) {
+    showToast('Cannot reach VPS');
+  }
+}
+
+async function restoreSettingsFromVPS() {
+  const vpsUrl = document.getElementById('vps-url')?.value.trim() || 
+                 JSON.parse(localStorage.getItem('awys-settings') || '{}').vpsUrl;
+  
+  if (!vpsUrl) { 
+    showToast('Enter VPS URL first: https://api.aiwhileyousleeping.com');
+    return; 
+  }
+
+  try {
+    const res = await fetch(vpsUrl + '/settings/restore', {signal: AbortSignal.timeout(5000)});
+    const data = await res.json();
+    
+    if (!data.settings) { showToast('No backup found on server'); return; }
+
+    const s = data.settings;
+    const vpsEl = document.getElementById('vps-url');
+    const repoEl = document.getElementById('github-repo');
+    const filenameEl = document.getElementById('github-filename');
+    const phoneEl = document.getElementById('phone-number');
+    const scriptTimeEl = document.getElementById('script-time');
+    const ytTimeEl = document.getElementById('yt-post-time');
+    const autopilotEl = document.getElementById('autopilot-enabled');
+
+    if (vpsEl && s.vpsUrl) vpsEl.value = s.vpsUrl;
+    if (repoEl && s.githubRepo) repoEl.value = s.githubRepo;
+    if (filenameEl && s.githubFilename) filenameEl.value = s.githubFilename;
+    if (phoneEl && s.phoneNumber) phoneEl.value = s.phoneNumber;
+    if (scriptTimeEl && s.scriptTime) scriptTimeEl.value = s.scriptTime;
+    if (ytTimeEl && s.ytPostTime) ytTimeEl.value = s.ytPostTime;
+    if (autopilotEl && s.autopilotEnabled !== undefined) autopilotEl.value = s.autopilotEnabled ? 'true' : 'false';
+
+    showToast('Settings restored! Add your API keys then Save Settings.');
+  } catch(e) {
+    showToast('Cannot reach VPS — enter URL manually first');
+  }
+}
+
 // ── GITHUB AUTO-DEPLOY ──
 async function deployToGitHub() {
   const token = state.settings.githubToken;
