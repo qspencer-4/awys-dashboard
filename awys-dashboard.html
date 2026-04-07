@@ -227,6 +227,44 @@ nav {
   vertical-align: middle;
 }
 
+.category-badge {
+  display: inline-block;
+  font-size: 8px;
+  letter-spacing: 1px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+  border: 1px solid;
+}
+.category-badge[data-cat="Make Money"] { background: rgba(74,222,128,0.12); border-color: rgba(74,222,128,0.3); color: #4ade80; }
+.category-badge[data-cat="Productivity"] { background: rgba(0,212,255,0.12); border-color: rgba(0,212,255,0.3); color: #00d4ff; }
+.category-badge[data-cat="Tool Review"] { background: rgba(240,160,32,0.12); border-color: rgba(240,160,32,0.3); color: #F0A020; }
+.category-badge[data-cat="AI News"] { background: rgba(168,130,255,0.12); border-color: rgba(168,130,255,0.3); color: #a882ff; }
+.category-badge[data-cat="Comparison"] { background: rgba(255,170,50,0.12); border-color: rgba(255,170,50,0.3); color: #ffaa32; }
+.category-badge[data-cat="Shocking"] { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.3); color: #f87171; }
+.category-badge[data-cat="Beginner"] { background: rgba(96,165,250,0.12); border-color: rgba(96,165,250,0.3); color: #60a5fa; }
+
+.category-filters {
+  display: flex;
+  gap: 6px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.cat-filter-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--white-dim);
+  padding: 3px 10px;
+  font-size: 8px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.2s;
+}
+.cat-filter-btn:hover { border-color: var(--gold); color: var(--gold); }
+.cat-filter-btn.active { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+
 /* ── SCRIPT PANEL ── */
 .script-panel {
   display: flex;
@@ -721,6 +759,9 @@ nav {
         <div class="panel-label">Trending Now</div>
         <button class="refresh-btn" onclick="loadTrends()">↻ Refresh</button>
       </div>
+      <div class="category-filters" id="category-filters">
+        <button class="cat-filter-btn active" onclick="filterByCategory('all')">ALL</button>
+      </div>
       <div class="trends-list" id="trends-list">
         <div class="empty-state">Hit Refresh to load live trends<span class="loading-dots"></span></div>
       </div>
@@ -896,7 +937,7 @@ function showTab(tab) {
   document.querySelectorAll('.nav-tab').forEach(t => {
     if (t.getAttribute('onclick')?.includes("'" + tab + "'")) t.classList.add('active');
   });
-  if (tab === 'generate') { renderTrends(); renderScripts(); if (!state.trends.length) loadTrends(); }
+  if (tab === 'generate') { renderCategoryFilters(); renderTrends(); renderScripts(); if (!state.trends.length) loadTrends(); }
   if (tab === 'queue') { renderManualQueue(); initCountdowns(); }
   if (tab === 'analytics') { loadAnalytics(); }
 }
@@ -988,36 +1029,57 @@ async function loadTrends() {
     const data = await res.json();
     if (data.error) { showSampleTrends(); return; }
     state.trends = data.trends || [];
+    renderCategoryFilters();
     renderTrends();
-    showToast('Live trends loaded from ' + (data.sources || ['Reddit','PH','HN']).join(', '));
+    showToast('Live trends loaded from ' + (data.sources || ['Reddit','HN','YouTube','Bing News']).join(', '));
   } catch(e) { showSampleTrends(); }
 }
 
 function showSampleTrends() {
   state.trends = [
-    {title: 'Claude is bypassing permissions — users report', source: 'r/singularity', views: 778100, hot: true, platform: 'Reddit'},
-    {title: 'ChatGPT just got a major memory update', source: 'r/ChatGPT', views: 452600, hot: true, platform: 'Reddit'},
-    {title: 'The era of human coding is over', source: 'r/singularity', views: 300300, hot: true, platform: 'Reddit'},
-    {title: 'Best free AI tools that replace $500/mo software', source: 'Product Hunt', views: 200000, hot: false, platform: 'Product Hunt'},
-    {title: 'I automated my entire workflow with AI', source: 'Hacker News', views: 150000, hot: false, platform: 'Hacker News'},
-    {title: 'Gemini 2.0 vs GPT-4o — full comparison', source: 'r/artificial', views: 120000, hot: false, platform: 'Reddit'},
+    {title: 'Claude is bypassing permissions -- users report', source: 'r/singularity', views: 778100, heat: 'HOT', platform: 'Reddit', category: 'Shocking'},
+    {title: 'ChatGPT just got a major memory update', source: 'r/ChatGPT', views: 452600, heat: 'HOT', platform: 'Reddit', category: 'AI News'},
+    {title: 'The era of human coding is over', source: 'r/singularity', views: 300300, heat: 'HOT', platform: 'Reddit', category: 'Shocking'},
+    {title: 'Best free AI tools that replace $500/mo software', source: 'Bing News', views: 200000, heat: 'RISING', platform: 'Bing News', category: 'Tool Review'},
+    {title: 'I automated my entire workflow with AI', source: 'Hacker News', views: 150000, heat: 'RISING', platform: 'Hacker News', category: 'Productivity'},
+    {title: 'Gemini 2.5 vs Claude 4 -- full comparison', source: 'YouTube Search', views: 120000, heat: 'RISING', platform: 'YouTube', category: 'Comparison'},
   ];
+  renderCategoryFilters();
+  renderTrends();
+}
+
+let activeCategoryFilter = 'all';
+
+function renderCategoryFilters() {
+  const container = document.getElementById('category-filters');
+  if (!container) return;
+  const categories = [...new Set(state.trends.map(t => t.category).filter(Boolean))];
+  container.innerHTML = `<button class="cat-filter-btn ${activeCategoryFilter === 'all' ? 'active' : ''}" onclick="filterByCategory('all')">ALL</button>` +
+    categories.map(c => `<button class="cat-filter-btn ${activeCategoryFilter === c ? 'active' : ''}" onclick="filterByCategory('${c}')">${c.toUpperCase()}</button>`).join('');
+}
+
+function filterByCategory(cat) {
+  activeCategoryFilter = cat;
+  renderCategoryFilters();
   renderTrends();
 }
 
 function renderTrends() {
   const list = document.getElementById('trends-list');
   if (!list) return;
-  if (!state.trends.length) { list.innerHTML = '<div class="empty-state">No trends — hit Refresh</div>'; return; }
-  list.innerHTML = state.trends.map((t, i) => `
-    <div class="trend-item" onclick="useTrend(${i})" id="trend-${i}">
+  if (!state.trends.length) { list.innerHTML = '<div class="empty-state">No trends -- hit Refresh</div>'; return; }
+  const filtered = activeCategoryFilter === 'all' ? state.trends : state.trends.filter(t => t.category === activeCategoryFilter);
+  if (!filtered.length) { list.innerHTML = '<div class="empty-state">No trends in this category</div>'; return; }
+  list.innerHTML = filtered.map((t, i) => {
+    const realIdx = state.trends.indexOf(t);
+    return `<div class="trend-item" onclick="useTrend(${realIdx})" id="trend-${realIdx}">
       <div class="trend-source">${(t.source || t.platform || '').substring(0,12)}</div>
       <div>
-        <div class="trend-title-text">${t.title}${t.hot ? '<span class="hot-badge">HOT</span>' : ''}</div>
-        <div class="trend-score">${formatNum(t.views || t.score || 0)} engagements</div>
+        <div class="trend-title-text">${t.title}${t.hot || t.heat === 'HOT' ? '<span class="hot-badge">HOT</span>' : ''}${t.category ? '<span class="category-badge" data-cat="' + t.category + '">' + t.category + '</span>' : ''}</div>
+        <div class="trend-score">${formatNum(t.views || t.score || 0)} engagements${t.niche_score ? ' · niche: ' + Math.round(t.niche_score) : ''}</div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 function useTrend(i) {
@@ -1027,6 +1089,7 @@ function useTrend(i) {
   document.getElementById('trend-' + i)?.classList.add('selected');
   const el = document.getElementById('script-topic');
   if (el) { el.value = trend.title; el.focus(); }
+  state._selectedCategory = trend.category || '';
 }
 
 // ── SCRIPT GENERATION ──
@@ -1039,16 +1102,18 @@ async function generateScript() {
   if (!vpsUrl) { showToast('Add VPS URL in Settings'); return; }
   if (!antKey) { showToast('Add Claude API key in Settings'); return; }
   const btn = document.getElementById('gen-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Refining topic...'; }
+  setTimeout(() => { if (btn && btn.disabled) btn.textContent = 'Writing script...'; }, 3000);
   try {
     const res = await fetch(vpsUrl + '/generate-script', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({topic, platform, key: antKey, length: 60})
+      body: JSON.stringify({topic, platform, key: antKey, length: 60, category: state._selectedCategory || ''})
     });
     const data = await res.json();
     if (data.error) { showToast('Error: ' + data.error); return; }
-    const scriptObj = {id: Date.now(), topic, platform, script: data.script, generated_at: new Date().toISOString()};
+    const refinedTopic = data.refined_topic || topic;
+    const scriptObj = {id: Date.now(), topic: refinedTopic, originalTopic: topic, platform, script: data.script, generated_at: new Date().toISOString()};
     state.scripts.unshift(scriptObj);
     renderScripts();
     autoFillFromScript(scriptObj.script);
@@ -1069,7 +1134,7 @@ function renderScripts() {
       <div class="script-card-header">
         <div>
           <div class="script-topic-label">${s.topic}</div>
-          <div class="script-meta-label">${s.platform.toUpperCase()} · ${new Date(s.generated_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+          <div class="script-meta-label">${s.platform.toUpperCase()} · ${new Date(s.generated_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${s.originalTopic && s.originalTopic !== s.topic ? ' · refined from: ' + s.originalTopic.substring(0,40) + '...' : ''}</div>
         </div>
       </div>
       <div class="script-preview-text">${s.script.substring(0,180)}...</div>
@@ -1094,17 +1159,26 @@ function viewScript(i) {
 function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const preamble = `Create a 30-second vertical 9:16 short-form video in the AI While You Sleeping style.
+  const preamble = `Create a 30-second vertical 9:16 ANIMATED video for AI While You Sleeping.
 
-VISUAL STYLE: Animated or illustrated style. NOT stock footage. The video features a metaphoric character that acts out the topic visually.
+CRITICAL: This video must be FULLY ANIMATED / ILLUSTRATED. Do NOT use stock footage or live action clips. Everything should be animated.
 
-CHARACTER: Use the metaphoric character described in the script. If none specified, use an animated robot mascot.
+ANIMATION STYLE: 2D animated/illustrated characters with bold outlines, expressive cartoon faces, and smooth motion. Think Kurzgesagt meets TikTok Shorts.
 
-STYLE: Dark backgrounds with vibrant neon pops of cyan, gold, and purple. Fast cuts every 1-2 seconds. Bold white captions always visible.
+COLOR PALETTE: Dark backgrounds (#0a0a12) with vibrant neon pops -- cyan (#00d4ff), gold (#F0A020), purple (#a882ff). Glowing effects on key elements.
 
-MUSIC: Match the energy — lo-fi for calm topics, trap beats for hype, cinematic for mind-blowing moments.
+CHARACTER: Use the METAPHORIC CHARACTER described in the script below. The character must be an animated/illustrated figure (not a real person). If no character is specified, use an animated gold-and-cyan robot mascot with glowing eyes.
 
-CAPTIONS: Always on. Bold white text, black outline. Large and readable on mobile.
+ANIMATION REQUIREMENTS:
+- Character has exaggerated reactions (jaw drops, eyes pop, arms flail)
+- Background elements animate and respond to the story
+- Dramatic lighting shifts when the AI tool is revealed
+- Fast cuts every 2-3 seconds to maintain energy
+- Particle effects, glow trails, and motion blur on key moments
+
+CAPTIONS: Always on. Bold white text with black outline. Large and mobile-readable. Appear with animated bounce/slide effects.
+
+MUSIC: High energy -- lo-fi beats for calm topics, trap/electronic for hype, cinematic orchestral for mind-blowing reveals.
 
 ---SCRIPT---
 `;
