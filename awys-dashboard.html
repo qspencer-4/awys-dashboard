@@ -1185,7 +1185,7 @@ function addScriptToQueue(i) {
   if (!s) return;
   autoFillFromScript(s.script);
   document.getElementById('script-modal')?.classList.remove('open');
-  showToast('Script loaded — go to Queue tab to add video file');
+  addToManualQueue();
 }
 
 // ── AUTO FILL ──
