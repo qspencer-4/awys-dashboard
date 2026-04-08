@@ -1185,7 +1185,7 @@ function addScriptToQueue(i) {
   if (!s) return;
   autoFillFromScript(s.script);
   document.getElementById('script-modal')?.classList.remove('open');
-  addToManualQueue();
+  showToast('Script loaded — go to Queue tab to add video file');
 }
 
 // ── AUTO FILL ──
@@ -1228,11 +1228,10 @@ function renderManualQueue() {
     <div class="queue-item">
       <div class="queue-item-header">
         <div class="queue-item-title">${item.title}</div>
-        <div class="queue-item-meta">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path ? item.video_path.split('/').pop() : 'No video attached'}</div>
+        <div class="queue-item-meta">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path || 'No file'}</div>
         <div class="queue-item-actions">
-          <button class="action-btn" style="border-color:${item.video_path ? 'var(--success)' : 'rgba(240,160,32,0.5)'};color:${item.video_path ? 'var(--success)' : '#F0A020'}" onclick="uploadVideoForQueue(${idx})">${item.video_path ? '✓ Replace Video' : '+ Upload Video'}</button>
           <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="generatePlatformCaptions(${idx})">✦ Generate Captions</button>
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:rgba(255,0,0,0.1);border-color:rgba(255,68,68,0.4);color:#FF4444" onclick="postQueueItem(${idx})"${!item.video_path ? ' disabled title="Upload a video first"' : ''}>▶ Post YouTube</button>
+          <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:rgba(255,0,0,0.1);border-color:rgba(255,68,68,0.4);color:#FF4444" onclick="postQueueItem(${idx})">▶ Post YouTube</button>
           <button class="action-btn" onclick="removeQueueItem(${idx})">✕ Remove</button>
         </div>
       </div>
@@ -1245,11 +1244,9 @@ function renderManualQueue() {
               <div class="platform-name">${p.toUpperCase()}</div>
             </div>
             ${c ? `
-              <div class="platform-caption">${c.caption.substring(0,140)}...</div>
-              ${c.first_comment ? '<div style="font-size:9px;color:var(--accent);margin-top:4px">+ First comment with hashtags</div>' : ''}
-              ${c.tags && c.tags.length ? '<div class="platform-tags">' + c.tags.slice(0,3).join(' ') + '</div>' : ''}
+              <div class="platform-caption">${c.caption.substring(0,120)}...</div>
+              <div class="platform-tags">${c.tags.slice(0,3).join(' ')}</div>
               <button class="copy-btn" onclick="copyCaptionForPlatform(${idx},'${p}')">Copy Caption</button>
-              ${c.first_comment ? `<button class="copy-btn" style="margin-top:4px" onclick="copyFirstComment(${idx},'${p}')">Copy First Comment</button>` : ''}
             ` : `<div style="font-size:11px;color:var(--white-dim);line-height:1.6">Click Generate Captions</div>`}
           </div>`;
         }).join('')}
@@ -1260,12 +1257,13 @@ function renderManualQueue() {
 
 function addToManualQueue() {
   const meta = state._pendingMeta || extractMetaFromScript('');
+  const videoPath = '/root/awys/video.mp4';
   const item = {
     id: Date.now(),
     title: meta.title || 'Untitled Video',
     description: meta.description,
     tags: meta.tags,
-    video_path: '',
+    video_path: videoPath,
     status: 'ready',
     created_at: new Date().toISOString()
   };
@@ -1277,93 +1275,32 @@ function addToManualQueue() {
   showTab('queue');
 }
 
-async function uploadVideoForQueue(idx) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'video/*';
-  input.onchange = async () => {
-    const file = input.files[0];
-    if (!file) return;
-    const vpsUrl = state.settings.vpsUrl;
-    if (!vpsUrl) { showToast('Add VPS URL in Settings'); return; }
-    showToast('Uploading ' + file.name + '...');
-    const filename = 'video_' + Date.now() + '.mp4';
-    try {
-      const formData = new FormData();
-      formData.append('video', file, filename);
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = () => xhr.status === 200 ? resolve() : reject(new Error('Upload failed'));
-        xhr.onerror = () => reject(new Error('Network error'));
-        xhr.open('POST', vpsUrl + '/video/upload-file');
-        xhr.send(formData);
-      });
-      const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-      queue[idx].video_path = '/root/awys/' + filename;
-      localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-      renderManualQueue();
-      showToast('Video uploaded and attached!');
-    } catch(e) { showToast('Upload failed: ' + e.message); }
-  };
-  input.click();
-}
-
 async function generatePlatformCaptions(idx) {
   const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
   const item = queue[idx];
   if (!item) return;
-  const title = item.title || 'AI Tool Review';
-  const antKey = state.settings.antKey;
-  if (antKey) {
-    showToast('Generating captions with AI...');
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': antKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 800,
-          messages: [{role:'user', content:`Write social media captions for a 30-second video about: "${title}"
-
-The brand is AI While You Sleeping (@aiwhileyousleeping). We review AI tools for everyday people.
-
-Return ONLY valid JSON, no other text. Format:
-
-{"youtube":{"caption":"...","tags":["tag1","tag2"]},"tiktok":{"caption":"...","tags":["#tag1","#tag2"]},"instagram":{"caption":"...","first_comment":"..."},"facebook":{"caption":"...","tags":["#tag1","#tag2"]}}
-
-Rules for each platform:
-
-YOUTUBE: Write an SEO title that includes the tool name, then 2-3 sentence description about what this specific tool does and why it matters. End with "Subscribe for daily AI tool reviews." 8 tags without # symbol. Make the title searchable.
-
-TIKTOK: Short, punchy, conversational. 1-2 lines that sound like a real person talking about this specific tool — what it does, why it is wild. End with "Follow @aiwhileyousleeping". Then 10 hashtags inline at end of caption. Tags array should match.
-
-INSTAGRAM: This is the most important one. Write a caption that tells a mini story about this specific tool. What it does, why it surprised you, who needs it. 3-4 short paragraphs. Make people want to save the post. End with "Follow @aiwhileyousleeping for a new AI tool every day". NO hashtags in caption at all. Put exactly 20 relevant hashtags in the "first_comment" field — mix of big hashtags and niche ones for reach.
-
-FACEBOOK: Bullet point style with plain dashes, 3-4 specific points about what this tool does. End with "Follow AI While You Sleeping for daily AI reviews". Max 6 hashtags in tags.
-
-Use emojis where they help — arrows, fire, eyes, robots, money bags, etc. They boost engagement. Write about THIS specific topic, not generic AI content. Every caption should mention the actual tool or topic by name.`}]
-        })
-      });
-      const data = await res.json();
-      const text = data.content && data.content[0] && data.content[0].text;
-      if (text) {
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          queue[idx].captions = JSON.parse(jsonMatch[0]);
-          localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-          renderManualQueue();
-          showToast('Platform captions generated!');
-          return;
-        }
-      }
-    } catch(e) { console.error('Caption gen error:', e); }
-  }
-  showToast('Add your Claude API key in Settings to generate captions');
+  showToast('Generating captions for all 4 platforms...');
+  queue[idx].captions = {
+    youtube: {
+      caption: item.title + ' | AI While You Sleeping. I tested this AI tool so you do not have to. Watch to find out what happened.',
+      tags: ['AItools','shorts','ChatGPT','AI2026','productivity','tech','artificialintelligence','aiwhileyousleeping']
+    },
+    tiktok: {
+      caption: 'POV: you just found the AI tool that is about to go viral 👀\n\nI tested it so you do not have to 🤖',
+      tags: ['#AItools','#fyp','#foryou','#ChatGPT','#techtok','#AIhacks','#learnontiktok','#AI2026','#viral','#aiwhileyousleeping']
+    },
+    instagram: {
+      caption: 'This AI tool just changed everything and you need to save this right now ⬇️\n\nI spent 30 days testing it so you do not have to 🤖\n\nFollow @aiwhileyousleeping for a new AI tool every day 💰',
+      tags: ['#AItools','#artificialintelligence','#techreview','#productivityhacks','#ChatGPT','#AIreview','#reels','#instareels','#AI2026','#aiwhileyousleeping','#aitools2026','#contentcreator','#techinfluencer','#openai','#techhacks','#worksmarter','#digitaltools','#viralreels','#explorepage','#trending']
+    },
+    facebook: {
+      caption: 'I spent 30 days testing this AI tool so you do not have to — and what I found actually surprised me.\n\nHere is the honest breakdown:\n\n✅ Anyone can use it — no tech skills needed\n✅ Saves hours every single week\n✅ Free to start\n\nWatch the full review above 👆\n\nFollow AI While You Sleeping for a new AI tool review every day 🤖💰',
+      tags: ['AItools','ChatGPT','productivity','AI2026','technology','artificialintelligence']
+    }
+  };
+  localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
+  renderManualQueue();
+  showToast('Captions ready for all 4 platforms!');
 }
 
 function copyCaptionForPlatform(idx, platform) {
@@ -1371,18 +1308,8 @@ function copyCaptionForPlatform(idx, platform) {
   const item = queue[idx];
   if (!item?.captions?.[platform]) return;
   const c = item.captions[platform];
-  let text = c.caption;
-  if (platform !== 'instagram' && c.tags && c.tags.length) {
-    text += '\n\n' + c.tags.join(' ');
-  }
+  const text = c.caption + '\n\n' + c.tags.join(' ');
   navigator.clipboard.writeText(text).then(() => showToast(platform.toUpperCase() + ' caption copied!'));
-}
-
-function copyFirstComment(idx, platform) {
-  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
-  const item = queue[idx];
-  if (!item?.captions?.[platform]?.first_comment) return;
-  navigator.clipboard.writeText(item.captions[platform].first_comment).then(() => showToast('First comment hashtags copied!'));
 }
 
 async function postQueueItem(idx) {
