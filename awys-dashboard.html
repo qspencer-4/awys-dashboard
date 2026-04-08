@@ -1312,28 +1312,58 @@ async function generatePlatformCaptions(idx) {
   const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
   const item = queue[idx];
   if (!item) return;
-  showToast('Generating captions for all 4 platforms...');
-  queue[idx].captions = {
-    youtube: {
-      caption: item.title + ' | AI While You Sleeping. I tested this AI tool so you do not have to. Watch to find out what happened.',
-      tags: ['AItools','shorts','ChatGPT','AI2026','productivity','tech','artificialintelligence','aiwhileyousleeping']
-    },
-    tiktok: {
-      caption: 'POV: you just found the AI tool that is about to go viral 👀\n\nI tested it so you do not have to 🤖',
-      tags: ['#AItools','#fyp','#foryou','#ChatGPT','#techtok','#AIhacks','#learnontiktok','#AI2026','#viral','#aiwhileyousleeping']
-    },
-    instagram: {
-      caption: 'This AI tool just changed everything and you need to save this right now ⬇️\n\nI spent 30 days testing it so you do not have to 🤖\n\nFollow @aiwhileyousleeping for a new AI tool every day 💰',
-      tags: ['#AItools','#artificialintelligence','#techreview','#productivityhacks','#ChatGPT','#AIreview','#reels','#instareels','#AI2026','#aiwhileyousleeping','#aitools2026','#contentcreator','#techinfluencer','#openai','#techhacks','#worksmarter','#digitaltools','#viralreels','#explorepage','#trending']
-    },
-    facebook: {
-      caption: 'I spent 30 days testing this AI tool so you do not have to — and what I found actually surprised me.\n\nHere is the honest breakdown:\n\n✅ Anyone can use it — no tech skills needed\n✅ Saves hours every single week\n✅ Free to start\n\nWatch the full review above 👆\n\nFollow AI While You Sleeping for a new AI tool review every day 🤖💰',
-      tags: ['AItools','ChatGPT','productivity','AI2026','technology','artificialintelligence']
-    }
-  };
-  localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-  renderManualQueue();
-  showToast('Captions ready for all 4 platforms!');
+  const title = item.title || 'AI Tool Review';
+  const antKey = state.settings.antKey;
+  if (antKey) {
+    showToast('Generating captions with AI...');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': antKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          messages: [{role:'user', content:`Write social media captions for a 30-second video about: "${title}"
+
+The brand is AI While You Sleeping (@aiwhileyousleeping). We review AI tools for everyday people.
+
+Return ONLY valid JSON, no other text. Format:
+
+{"youtube":{"caption":"...","tags":["tag1","tag2"]},"tiktok":{"caption":"...","tags":["#tag1","#tag2"]},"instagram":{"caption":"...","first_comment":"..."},"facebook":{"caption":"...","tags":["#tag1","#tag2"]}}
+
+Rules for each platform:
+
+YOUTUBE: Write an SEO title that includes the tool name, then 2-3 sentence description about what this specific tool does and why it matters. End with "Subscribe for daily AI tool reviews." 8 tags without # symbol. Make the title searchable.
+
+TIKTOK: Short, punchy, conversational. 1-2 lines that sound like a real person talking about this specific tool — what it does, why it is wild. End with "Follow @aiwhileyousleeping". Then 10 hashtags inline at end of caption. Tags array should match.
+
+INSTAGRAM: This is the most important one. Write a caption that tells a mini story about this specific tool. What it does, why it surprised you, who needs it. 3-4 short paragraphs. Make people want to save the post. End with "Follow @aiwhileyousleeping for a new AI tool every day". NO hashtags in caption at all. Put exactly 20 relevant hashtags in the "first_comment" field — mix of big hashtags and niche ones for reach.
+
+FACEBOOK: Bullet point style with plain dashes, 3-4 specific points about what this tool does. End with "Follow AI While You Sleeping for daily AI reviews". Max 6 hashtags in tags.
+
+Use emojis where they help — arrows, fire, eyes, robots, money bags, etc. They boost engagement. Write about THIS specific topic, not generic AI content. Every caption should mention the actual tool or topic by name.`}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content && data.content[0] && data.content[0].text;
+      if (text) {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          queue[idx].captions = JSON.parse(jsonMatch[0]);
+          localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
+          renderManualQueue();
+          showToast('Platform captions generated!');
+          return;
+        }
+      }
+    } catch(e) { console.error('Caption gen error:', e); }
+  }
+  showToast('Add your Claude API key in Settings to generate captions');
 }
 
 function copyCaptionForPlatform(idx, platform) {
