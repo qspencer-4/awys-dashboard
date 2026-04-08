@@ -1156,28 +1156,68 @@ function viewScript(i) {
   document.getElementById('script-modal')?.classList.add('open');
 }
 
-function copyScriptForInVideo(i) {
+async function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const preamble = `Create a 30-second vertical 9:16 video using stock footage clips and bold text overlays.
+  const topic = s.topic || s.originalTopic || 'AI tool review';
+  const antKey = state.settings.antKey;
+  if (antKey) {
+    showToast('Building InVideo prompt...');
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': antKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 200,
+          messages: [{role:'user', content:`Write 6 short text overlay lines for a 30-second vertical video about: ${topic}
 
-IMPORTANT: Use only real stock footage clips that exist in your library. No animation, no custom graphics, no fantasy scenes.
+Each line shows on screen for 5 seconds over stock footage. Viewers watch on mute so text carries the message.
 
-STYLE: Fast cuts between stock footage clips. Bold white text overlay on every clip telling the story. Viewers watch on mute so the text must carry the message.
+Line 1: hook that stops the scroll
+Line 2: the problem this solves
+Line 3: what the tool does in plain English
+Line 4: a specific result that makes it real
+Line 5: the wow moment
+Line 6: Follow @aiwhileyousleeping for daily AI tools
 
-GOOD FOOTAGE: people typing on laptops, phone screens, surprised/excited reactions, office setups, money/charts, clocks/timers, celebrations, tech offices, abstract data backgrounds.
-
-BAD FOOTAGE: animated characters, custom tool interfaces, fantasy/sci-fi, anything that needs to be custom-made.
-
-MUSIC: High energy background track. CAPTIONS: Bold white text, black outline, always visible.
-
----SCRIPT---
-`;
-  navigator.clipboard.writeText(preamble + s.script).then(() => {
-    showToast('Copied! Paste into InVideo');
-    autoFillFromScript(s.script);
-    document.getElementById('script-modal')?.classList.remove('open');
-  });
+Max 12 words per line. Each line is a DIFFERENT idea. No labels. No emojis. No directions. No quotes. Just the 6 lines, nothing else.`}]
+        })
+      });
+      const data = await res.json();
+      const text = data.content && data.content[0] && data.content[0].text;
+      if (text) {
+        const lines = text.split('\n').map(l => l.replace(/^\d+[.):\-]\s*/, '').trim()).filter(l => l.length > 3 && l.length < 100);
+        if (lines.length >= 4) {
+          const scenes = lines.slice(0, 6);
+          while (scenes.length < 6) scenes.push('Follow @aiwhileyousleeping for daily AI tools');
+          const prompt = 'Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.\n\n' +
+            scenes.map((sc, j) => 'Scene ' + (j+1) + ': "' + sc + '"').join('\n');
+          await navigator.clipboard.writeText(prompt);
+          showToast('Copied! Paste into InVideo');
+          autoFillFromScript(s.script);
+          document.getElementById('script-modal')?.classList.remove('open');
+          return;
+        }
+      }
+    } catch(e) { console.error('InVideo prompt error:', e); }
+  }
+  const prompt = 'Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.\n\n' +
+    'Scene 1: "' + topic + '"\n' +
+    'Scene 2: "Most people have no idea this exists"\n' +
+    'Scene 3: "It does the hard part for you automatically"\n' +
+    'Scene 4: "I tested it for a full week"\n' +
+    'Scene 5: "This is the tool I wish I found sooner"\n' +
+    'Scene 6: "Follow @aiwhileyousleeping for daily AI tools"';
+  await navigator.clipboard.writeText(prompt);
+  showToast('Copied! Paste into InVideo');
+  autoFillFromScript(s.script);
+  document.getElementById('script-modal')?.classList.remove('open');
 }
 
 function addScriptToQueue(i) {
