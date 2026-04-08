@@ -1159,22 +1159,10 @@ function viewScript(i) {
 function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const preamble = `Create a 30-second vertical 9:16 video using stock footage clips and bold text overlays.
-
-IMPORTANT: Use only real stock footage clips that exist in your library. No animation, no custom graphics, no fantasy scenes.
-
-STYLE: Fast cuts between stock footage clips. Bold white text overlay on every clip telling the story. Viewers watch on mute so the text must carry the message.
-
-GOOD FOOTAGE: people typing on laptops, phone screens, surprised/excited reactions, office setups, money/charts, clocks/timers, celebrations, tech offices, abstract data backgrounds.
-
-BAD FOOTAGE: animated characters, custom tool interfaces, fantasy/sci-fi, anything that needs to be custom-made.
-
-MUSIC: High energy background track. CAPTIONS: Bold white text, black outline, always visible.
-
----SCRIPT---
-`;
-  navigator.clipboard.writeText(preamble + s.script).then(() => {
-    showToast('Copied! Paste into InVideo');
+  const match = s.script.match(/INVIDEO PROMPT:\s*\n([\s\S]*?)(?=\nVOICEOVER:|\n\n[A-Z]+:)/);
+  const invideoPrompt = match ? match[1].trim() : s.script;
+  navigator.clipboard.writeText(invideoPrompt).then(() => {
+    showToast('Copied InVideo prompt!');
     autoFillFromScript(s.script);
     document.getElementById('script-modal')?.classList.remove('open');
   });
