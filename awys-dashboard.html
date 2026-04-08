@@ -1174,24 +1174,19 @@ async function copyScriptForInVideo(i) {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 600,
-          messages: [{role:'user', content:`You are writing a detailed prompt for InVideo AI to create a 30-second vertical video. The topic is: "${topic}"
+          max_tokens: 300,
+          messages: [{role:'user', content:`Write a short prompt I can paste into InVideo AI to make a 30-second vertical video about: "${topic}"
 
-First, research what you know about this topic. What is it? What does it do? Who is it for? What makes it interesting or surprising? Use real facts.
+Keep it simple. Just tell InVideo:
+- What the topic is and why it matters — make it sound interesting, not boring
+- The vibe: fast, punchy, high energy, the kind of video that makes someone stop scrolling
+- 30 seconds, vertical, bold text on screen so it works on mute
+- End with "Follow @aiwhileyousleeping for daily AI tools" on screen
+- No emojis
 
-Then write the InVideo prompt as one flowing paragraph, like you are talking directly to a video editor. Tell them exactly what to make. Be specific and detailed.
+Do NOT tell InVideo what specific footage to use or what exact text to put on each scene. Let InVideo figure that out. Just give it the topic, the angle, and the energy.
 
-Include all of this in your prompt:
-- The video is 30 seconds, vertical 9:16, for YouTube Shorts / TikTok / Reels
-- Use stock footage only. Describe the specific types of clips you want (people at computers, phone screens, office reactions, etc). Be specific to the topic.
-- Bold white text with black outline on every clip. The text tells the story because most people watch on mute.
-- Tell them what the text should say on each scene. Use real facts about the topic, not generic filler.
-- Fast cuts, 4-5 seconds per clip, high energy background music
-- Start with a bold hook in the first 3 seconds that stops the scroll
-- End the video with "Follow @aiwhileyousleeping for daily AI tools" as the last text on screen
-- No emojis anywhere
-
-Write ONLY the InVideo prompt. No intro, no explanation, no labels. Just the prompt as one detailed paragraph that I can paste directly into InVideo.`}]
+Write 3-4 sentences max. No intro, no labels. Just the prompt.`}]
         })
       });
       const data = await res.json();
