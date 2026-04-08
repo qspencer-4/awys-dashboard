@@ -1156,32 +1156,44 @@ function viewScript(i) {
   document.getElementById('script-modal')?.classList.add('open');
 }
 
-function copyScriptForInVideo(i) {
+async function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const lines = s.script.split('\n').map(l => l.trim()).filter(Boolean);
-  const textLines = [];
-  for (const line of lines) {
-    const cleaned = line
-      .replace(/^(HOOK|PROBLEM|SOLUTION|WOW MOMENT|CTA|VISUAL|SCENE|CHARACTER|METAPHOR|INVIDEO)[:\-]?\s*/i, '')
-      .replace(/^\*+\s*/, '')
-      .replace(/\*+\s*$/, '')
-      .replace(/\[.*?\]/g, '')
-      .replace(/^\d+[.)]\s*/, '')
-      .trim();
-    if (!cleaned) continue;
-    if (/^(metaphoric|character|visual scene|invideo prompt|narrator|voiceover style)/i.test(cleaned)) continue;
-    if (cleaned.length > 5 && cleaned.length < 120) textLines.push(cleaned);
+  const topic = s.topic || s.originalTopic || 'AI tool review';
+  const vpsUrl = state.settings.vpsUrl;
+  const antKey = state.settings.antKey;
+  if (vpsUrl && antKey) {
+    showToast('Building InVideo prompt...');
+    try {
+      const res = await fetch(vpsUrl + '/generate-script', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+          topic: topic,
+          platform: 'invideo',
+          key: antKey,
+          length: 30,
+          custom_prompt: `You write text overlays for 30-second vertical videos about AI tools. The topic is: "${topic}"\n\nWrite exactly 6 short lines of text. Each line will appear on screen for 5 seconds over stock footage. The viewer reads these on mute.\n\nRules:\n- Each line is a different idea, not the same sentence reworded\n- Line 1: hook that stops the scroll (question or bold claim)\n- Line 2: the problem this tool solves\n- Line 3: what the tool actually does in plain English\n- Line 4: a specific result or stat that makes it real\n- Line 5: the "wow" moment or unexpected benefit\n- Line 6: "Follow @aiwhileyousleeping for daily AI tools"\n- Max 12 words per line\n- No labels, no directions, no camera notes, no "HOOK:" or "SCENE:" prefixes\n- No emojis\n- Write like a person talking, not a script\n\nReturn ONLY the 6 lines, one per line, nothing else.`
+        })
+      });
+      const data = await res.json();
+      if (data.script) {
+        const lines = data.script.split('\n').map(l => l.trim()).filter(l => l && l.length > 3 && l.length < 100);
+        if (lines.length >= 4) {
+          const scenes = lines.slice(0, 6);
+          while (scenes.length < 6) scenes.push('Follow @aiwhileyousleeping for daily AI tools');
+          const prompt = `Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.\n\nScene 1: "${scenes[0]}"\nScene 2: "${scenes[1]}"\nScene 3: "${scenes[2]}"\nScene 4: "${scenes[3]}"\nScene 5: "${scenes[4]}"\nScene 6: "${scenes[5]}"`;
+          navigator.clipboard.writeText(prompt).then(() => {
+            showToast('Copied! Paste into InVideo');
+            autoFillFromScript(s.script);
+            document.getElementById('script-modal')?.classList.remove('open');
+          });
+          return;
+        }
+      }
+    } catch(e) { /* fall through to local */ }
   }
-  const scenes = textLines.slice(0, 6);
-  const prompt = `Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.
-
-Scene 1: "${scenes[0] || s.topic}"
-Scene 2: "${scenes[1] || ''}"
-Scene 3: "${scenes[2] || ''}"
-Scene 4: "${scenes[3] || ''}"
-Scene 5: "${scenes[4] || ''}"
-Scene 6: "${scenes[5] || 'Follow @aiwhileyousleeping'}"`;
+  const prompt = `Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.\n\nScene 1: "${topic}"\nScene 2: "Most people have no idea this exists"\nScene 3: "It does the hard part for you automatically"\nScene 4: "I tested it for a full week"\nScene 5: "This is the tool I wish I found sooner"\nScene 6: "Follow @aiwhileyousleeping for daily AI tools"`;
   navigator.clipboard.writeText(prompt).then(() => {
     showToast('Copied! Paste into InVideo');
     autoFillFromScript(s.script);
