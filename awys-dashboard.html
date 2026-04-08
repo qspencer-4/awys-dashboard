@@ -1174,50 +1174,38 @@ async function copyScriptForInVideo(i) {
         },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 200,
-          messages: [{role:'user', content:`Write 6 short text overlay lines for a 30-second vertical video about: ${topic}
+          max_tokens: 600,
+          messages: [{role:'user', content:`You are writing a detailed prompt for InVideo AI to create a 30-second vertical video. The topic is: "${topic}"
 
-Each line shows on screen for 5 seconds over stock footage. Viewers watch on mute so text carries the message.
+First, research what you know about this topic. What is it? What does it do? Who is it for? What makes it interesting or surprising? Use real facts.
 
-Line 1: hook that stops the scroll
-Line 2: the problem this solves
-Line 3: what the tool does in plain English
-Line 4: a specific result that makes it real
-Line 5: the wow moment
-Line 6: Follow @aiwhileyousleeping for daily AI tools
+Then write the InVideo prompt as one flowing paragraph, like you are talking directly to a video editor. Tell them exactly what to make. Be specific and detailed.
 
-Max 12 words per line. Each line is a DIFFERENT idea. No labels. No emojis. No directions. No quotes. Just the 6 lines, nothing else.`}]
+Include all of this in your prompt:
+- The video is 30 seconds, vertical 9:16, for YouTube Shorts / TikTok / Reels
+- Use stock footage only. Describe the specific types of clips you want (people at computers, phone screens, office reactions, etc). Be specific to the topic.
+- Bold white text with black outline on every clip. The text tells the story because most people watch on mute.
+- Tell them what the text should say on each scene. Use real facts about the topic, not generic filler.
+- Fast cuts, 4-5 seconds per clip, high energy background music
+- Start with a bold hook in the first 3 seconds that stops the scroll
+- End the video with "Follow @aiwhileyousleeping for daily AI tools" as the last text on screen
+- No emojis anywhere
+
+Write ONLY the InVideo prompt. No intro, no explanation, no labels. Just the prompt as one detailed paragraph that I can paste directly into InVideo.`}]
         })
       });
       const data = await res.json();
       const text = data.content && data.content[0] && data.content[0].text;
-      if (text) {
-        const lines = text.split('\n').map(l => l.replace(/^\d+[.):\-]\s*/, '').trim()).filter(l => l.length > 3 && l.length < 100);
-        if (lines.length >= 4) {
-          const scenes = lines.slice(0, 6);
-          while (scenes.length < 6) scenes.push('Follow @aiwhileyousleeping for daily AI tools');
-          const prompt = 'Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.\n\n' +
-            scenes.map((sc, j) => 'Scene ' + (j+1) + ': "' + sc + '"').join('\n');
-          await navigator.clipboard.writeText(prompt);
-          showToast('Copied! Paste into InVideo');
-          autoFillFromScript(s.script);
-          document.getElementById('script-modal')?.classList.remove('open');
-          return;
-        }
+      if (text && text.length > 50) {
+        await navigator.clipboard.writeText(text.trim());
+        showToast('Copied! Paste into InVideo');
+        autoFillFromScript(s.script);
+        document.getElementById('script-modal')?.classList.remove('open');
+        return;
       }
     } catch(e) { console.error('InVideo prompt error:', e); }
   }
-  const prompt = 'Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.\n\n' +
-    'Scene 1: "' + topic + '"\n' +
-    'Scene 2: "Most people have no idea this exists"\n' +
-    'Scene 3: "It does the hard part for you automatically"\n' +
-    'Scene 4: "I tested it for a full week"\n' +
-    'Scene 5: "This is the tool I wish I found sooner"\n' +
-    'Scene 6: "Follow @aiwhileyousleeping for daily AI tools"';
-  await navigator.clipboard.writeText(prompt);
-  showToast('Copied! Paste into InVideo');
-  autoFillFromScript(s.script);
-  document.getElementById('script-modal')?.classList.remove('open');
+  showToast('Add your Claude API key in Settings to generate InVideo prompts');
 }
 
 function addScriptToQueue(i) {
