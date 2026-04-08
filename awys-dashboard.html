@@ -1159,21 +1159,30 @@ function viewScript(i) {
 function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const preamble = `Create a 30-second vertical 9:16 video using stock footage clips and bold text overlays.
+  const lines = s.script.split('\n').map(l => l.trim()).filter(Boolean);
+  const textLines = [];
+  for (const line of lines) {
+    const cleaned = line
+      .replace(/^(HOOK|PROBLEM|SOLUTION|WOW MOMENT|CTA|VISUAL|SCENE|CHARACTER|METAPHOR|INVIDEO)[:\-]?\s*/i, '')
+      .replace(/^\*+\s*/, '')
+      .replace(/\*+\s*$/, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/^\d+[.)]\s*/, '')
+      .trim();
+    if (!cleaned) continue;
+    if (/^(metaphoric|character|visual scene|invideo prompt|narrator|voiceover style)/i.test(cleaned)) continue;
+    if (cleaned.length > 5 && cleaned.length < 120) textLines.push(cleaned);
+  }
+  const scenes = textLines.slice(0, 6);
+  const prompt = `Create a 30 second vertical video. Stock footage with bold white text overlays. Fast cuts. High energy music.
 
-IMPORTANT: Use only real stock footage clips that exist in your library. No animation, no custom graphics, no fantasy scenes.
-
-STYLE: Fast cuts between stock footage clips. Bold white text overlay on every clip telling the story. Viewers watch on mute so the text must carry the message.
-
-GOOD FOOTAGE: people typing on laptops, phone screens, surprised/excited reactions, office setups, money/charts, clocks/timers, celebrations, tech offices, abstract data backgrounds.
-
-BAD FOOTAGE: animated characters, custom tool interfaces, fantasy/sci-fi, anything that needs to be custom-made.
-
-MUSIC: High energy background track. CAPTIONS: Bold white text, black outline, always visible.
-
----SCRIPT---
-`;
-  navigator.clipboard.writeText(preamble + s.script).then(() => {
+Scene 1: "${scenes[0] || s.topic}"
+Scene 2: "${scenes[1] || ''}"
+Scene 3: "${scenes[2] || ''}"
+Scene 4: "${scenes[3] || ''}"
+Scene 5: "${scenes[4] || ''}"
+Scene 6: "${scenes[5] || 'Follow @aiwhileyousleeping'}"`;
+  navigator.clipboard.writeText(prompt).then(() => {
     showToast('Copied! Paste into InVideo');
     autoFillFromScript(s.script);
     document.getElementById('script-modal')?.classList.remove('open');
