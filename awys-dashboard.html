@@ -1156,51 +1156,28 @@ function viewScript(i) {
   document.getElementById('script-modal')?.classList.add('open');
 }
 
-async function copyScriptForInVideo(i) {
+function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const topic = s.topic || s.originalTopic || 'AI tool review';
-  const antKey = state.settings.antKey;
-  if (antKey) {
-    showToast('Building InVideo prompt...');
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': antKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 300,
-          messages: [{role:'user', content:`Write a short prompt I can paste into InVideo AI to make a 30-second vertical video about: "${topic}"
+  const preamble = `Create a 30-second vertical 9:16 video using stock footage clips and bold text overlays.
 
-Keep it simple. Just tell InVideo:
-- What the topic is and why it matters — make it sound interesting, not boring
-- The vibe: fast, punchy, high energy, the kind of video that makes someone stop scrolling
-- 30 seconds, vertical, bold text on screen so it works on mute
-- End with "Follow @aiwhileyousleeping for daily AI tools" on screen
-- No emojis
+IMPORTANT: Use only real stock footage clips that exist in your library. No animation, no custom graphics, no fantasy scenes.
 
-Do NOT tell InVideo what specific footage to use or what exact text to put on each scene. Let InVideo figure that out. Just give it the topic, the angle, and the energy.
+STYLE: Fast cuts between stock footage clips. Bold white text overlay on every clip telling the story. Viewers watch on mute so the text must carry the message.
 
-Write 3-4 sentences max. No intro, no labels. Just the prompt.`}]
-        })
-      });
-      const data = await res.json();
-      const text = data.content && data.content[0] && data.content[0].text;
-      if (text && text.length > 50) {
-        await navigator.clipboard.writeText(text.trim());
-        showToast('Copied! Paste into InVideo');
-        autoFillFromScript(s.script);
-        document.getElementById('script-modal')?.classList.remove('open');
-        return;
-      }
-    } catch(e) { console.error('InVideo prompt error:', e); }
-  }
-  showToast('Add your Claude API key in Settings to generate InVideo prompts');
+GOOD FOOTAGE: people typing on laptops, phone screens, surprised/excited reactions, office setups, money/charts, clocks/timers, celebrations, tech offices, abstract data backgrounds.
+
+BAD FOOTAGE: animated characters, custom tool interfaces, fantasy/sci-fi, anything that needs to be custom-made.
+
+MUSIC: High energy background track. CAPTIONS: Bold white text, black outline, always visible.
+
+---SCRIPT---
+`;
+  navigator.clipboard.writeText(preamble + s.script).then(() => {
+    showToast('Copied! Paste into InVideo');
+    autoFillFromScript(s.script);
+    document.getElementById('script-modal')?.classList.remove('open');
+  });
 }
 
 function addScriptToQueue(i) {
