@@ -1182,9 +1182,24 @@ function copyScriptForInVideo(i) {
 function addScriptToQueue(i) {
   const s = state.scripts[i];
   if (!s) return;
-  autoFillFromScript(s.script);
   document.getElementById('script-modal')?.classList.remove('open');
-  addToManualQueue();
+  const meta = extractMetaFromScript(s.script);
+  const item = {
+    id: Date.now(),
+    title: meta.title || s.topic || 'Untitled Video',
+    description: meta.description,
+    tags: meta.tags,
+    script: s.script,
+    video_path: '/root/awys/video.mp4',
+    status: 'ready',
+    created_at: new Date().toISOString()
+  };
+  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+  queue.unshift(item);
+  localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
+  showToast('Added to Queue!');
+  renderManualQueue();
+  showTab('queue');
 }
 
 // ── AUTO FILL ──
