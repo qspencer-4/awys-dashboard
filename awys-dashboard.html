@@ -1103,23 +1103,33 @@ async function generateScript() {
   if (!antKey) { showToast('Add Claude API key in Settings'); return; }
   const btn = document.getElementById('gen-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Refining topic...'; }
-  setTimeout(() => { if (btn && btn.disabled) btn.textContent = 'Writing script...'; }, 3000);
+  setTimeout(() => { if (btn && btn.disabled) btn.textContent = 'Researching topic...'; }, 3000);
+  setTimeout(() => { if (btn && btn.disabled) btn.textContent = 'Finding the angle...'; }, 8000);
+  setTimeout(() => { if (btn && btn.disabled) btn.textContent = 'Writing script...'; }, 15000);
+  setTimeout(() => { if (btn && btn.disabled) btn.textContent = 'Almost done...'; }, 25000);
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
     const res = await fetch(vpsUrl + '/generate-script', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({topic, platform, key: antKey, length: 60, category: state._selectedCategory || ''})
+      body: JSON.stringify({topic, platform, key: antKey, length: 60, category: state._selectedCategory || ''}),
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     const data = await res.json();
     if (data.error) { showToast('Error: ' + data.error); return; }
     const refinedTopic = data.refined_topic || topic;
-    const scriptObj = {id: Date.now(), topic: refinedTopic, originalTopic: topic, platform, script: data.script, generated_at: new Date().toISOString()};
+    const scriptObj = {id: Date.now(), topic: refinedTopic, originalTopic: topic, platform, script: data.script, research: data.research || '', generated_at: new Date().toISOString()};
     state.scripts.unshift(scriptObj);
     renderScripts();
     autoFillFromScript(scriptObj.script);
     showToast('Script generated!');
     document.getElementById('scripts-container')?.scrollIntoView({behavior:'smooth', block:'start'});
-  } catch(e) { showToast('Cannot reach VPS — check Settings'); }
+  } catch(e) {
+    if (e.name === 'AbortError') { showToast('Generation timed out -- try again'); }
+    else { showToast('Cannot reach VPS -- check Settings'); }
+  }
   finally { if (btn) { btn.disabled = false; btn.textContent = 'Generate Script'; } }
 }
 
