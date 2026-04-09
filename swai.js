@@ -1,4 +1,4 @@
-const CACHE = 'awys-v0.03';
+const CACHE = 'awys-v0.04';
 const ASSETS = [
   '/awys-dashboard/awys-dashboard.html',
   '/awys-dashboard/manifest.json'
