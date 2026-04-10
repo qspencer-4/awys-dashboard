@@ -1233,20 +1233,24 @@ function autoFillFromScript(script) {
 const PLATFORM_COLORS = {youtube:'#FF4444', tiktok:'#00f2ea', instagram:'#E1306C', facebook:'#1877F2'};
 const PLATFORM_ICONS = {youtube:'▶', tiktok:'♪', instagram:'◈', facebook:'f'};
 
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
 function renderManualQueue() {
   const container = document.getElementById('manual-queue-list');
   if (!container) return;
-  const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+  let queue = [];
+  try { queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]'); } catch(e) { queue = []; }
   if (!queue.length) { container.innerHTML = '<div class="empty-state">No videos ready — generate a script, create in InVideo, then add to queue</div>'; return; }
+  try {
   container.innerHTML = queue.map((item, idx) => `
     <div class="queue-item">
       <div class="queue-item-header">
-        <div class="queue-item-title">${item.title}</div>
-        <div class="queue-item-meta">${new Date(item.created_at).toLocaleDateString()} · ${item.video_path || 'No file'}</div>
+        <div class="queue-item-title">${esc(item.title)}</div>
+        <div class="queue-item-meta">${new Date(item.created_at).toLocaleDateString()} · ${esc(item.video_path) || 'No file'}</div>
         <div class="queue-item-actions">
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="generatePlatformCaptions(${idx})">✦ Generate Captions</button>
-          <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:rgba(255,0,0,0.1);border-color:rgba(255,68,68,0.4);color:#FF4444" onclick="postQueueItem(${idx})">▶ Post YouTube</button>
-          <button class="action-btn" onclick="removeQueueItem(${idx})">✕ Remove</button>
+          <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="generatePlatformCaptions(${idx})">Generate Captions</button>
+          <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:rgba(255,0,0,0.1);border-color:rgba(255,68,68,0.4);color:#FF4444" onclick="postQueueItem(${idx})">Post YouTube</button>
+          <button class="action-btn" onclick="removeQueueItem(${idx})">Remove</button>
         </div>
       </div>
       <div class="platform-cards">
@@ -1267,6 +1271,7 @@ function renderManualQueue() {
       </div>
     </div>
   `).join('');
+  } catch(e) { container.innerHTML = '<div class="empty-state">Error rendering queue — check console</div>'; console.error('Queue render error:', e); }
 }
 
 function addToManualQueue() {
