@@ -1261,9 +1261,9 @@ function renderManualQueue() {
               <div class="platform-dot" style="background:${PLATFORM_COLORS[p]}"></div>
               <div class="platform-name">${p.toUpperCase()}</div>
             </div>
-            ${c ? `
-              <div class="platform-caption">${c.caption.substring(0,120)}...</div>
-              <div class="platform-tags">${c.tags.slice(0,3).join(' ')}</div>
+            ${c && c.caption ? `
+              <div class="platform-caption">${esc(c.caption.substring(0,120))}...</div>
+              <div class="platform-tags">${(c.tags||[]).slice(0,3).join(' ')}</div>
               <button class="copy-btn" onclick="copyCaptionForPlatform(${idx},'${p}')">Copy Caption</button>
             ` : `<div style="font-size:11px;color:var(--white-dim);line-height:1.6">Click Generate Captions</div>`}
           </div>`;
