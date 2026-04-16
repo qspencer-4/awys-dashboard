@@ -1282,9 +1282,10 @@ async function generateVideoFromScript(i) {
     await new Promise(r => setTimeout(r, 800));
     _videoProgress(false, '', 0);
 
-    // Auto-add to queue with the video path
+    // Auto-add to queue with download URL
     autoFillFromScript(s.script);
     const meta = extractMetaFromScript(s.script);
+    const vpsBase = vpsUrl.replace(/\/$/, '');
     const item = {
       id: Date.now(),
       title: meta.title || s.topic || 'Untitled Video',
@@ -1293,6 +1294,7 @@ async function generateVideoFromScript(i) {
       script: s.script,
       video_path: data.video_path || '',
       filename: data.filename || '',
+      download_url: data.download_url ? vpsBase + data.download_url : '',
       status: 'ready',
       created_at: new Date().toISOString(),
     };
@@ -1386,8 +1388,9 @@ function renderManualQueue() {
     <div class="queue-item">
       <div class="queue-item-header">
         <div class="queue-item-title">${esc(item.title)}</div>
-        <div class="queue-item-meta">${new Date(item.created_at).toLocaleDateString()} · ${esc(item.video_path) || 'No file'}</div>
+        <div class="queue-item-meta">${new Date(item.created_at).toLocaleDateString()} · ${item.download_url ? esc(item.filename || 'Video ready') : 'No video'}</div>
         <div class="queue-item-actions">
+          ${item.download_url ? `<a href="${esc(item.download_url)}" target="_blank" class="gen-btn" style="padding:8px 16px;font-size:10px;text-decoration:none;display:inline-block">Download MP4</a>` : ''}
           <button class="gen-btn" style="padding:8px 16px;font-size:10px" onclick="generatePlatformCaptions(${idx})">Generate Captions</button>
           <button class="gen-btn" style="padding:8px 16px;font-size:10px;background:rgba(255,0,0,0.1);border-color:rgba(255,68,68,0.4);color:#FF4444" onclick="postQueueItem(${idx})">Post YouTube</button>
           <button class="action-btn" onclick="removeQueueItem(${idx})">Remove</button>
