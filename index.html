@@ -813,7 +813,7 @@ nav {
   <!-- Manual queue -->
   <div class="queue-section-label">Ready to Post</div>
   <div id="manual-queue-list">
-    <div class="empty-state">No videos ready — generate a script, create in InVideo, then add to queue</div>
+    <div class="empty-state">No videos ready — generate a script, then click Generate Video</div>
   </div>
 
 </div>
@@ -903,7 +903,7 @@ nav {
     <div class="modal-title">FULL SCRIPT</div>
     <div class="modal-body" id="modal-script-body"></div>
     <div class="modal-actions">
-      <button class="gen-btn" onclick="copyScriptForInVideo(currentModalIdx)">Copy for InVideo</button>
+      <button class="gen-btn" onclick="generateVideoFromScript(currentModalIdx)">Generate Video</button>
       <button class="action-btn" onclick="addScriptToQueue(currentModalIdx)">Add to Queue</button>
       <button class="action-btn" onclick="document.getElementById('script-modal').classList.remove('open')">Close</button>
     </div>
@@ -1153,10 +1153,10 @@ function renderScripts() {
           <div class="script-meta-label">${s.platform.toUpperCase()} · ${new Date(s.generated_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${s.originalTopic && s.originalTopic !== s.topic ? ' · refined from: ' + s.originalTopic.substring(0,40) + '...' : ''}</div>
         </div>
       </div>
-      <div class="script-preview-text">${(typeof s.script === 'object' ? (s.script.script || s.script.title || '') : s.script).substring(0,180)}...</div>
+      <div class="script-preview-text">${(typeof s.script === 'object' ? (s.script.scenes ? s.script.scenes.map(sc => sc.narration || '').join(' ') : s.script.script || s.script.title || '') : s.script).substring(0,180)}...</div>
       <div class="script-actions">
         <button class="action-btn" onclick="viewScript(${i})">View Full</button>
-        <button class="action-btn primary" onclick="copyScriptForInVideo(${i})">Copy for InVideo</button>
+        <button class="action-btn primary" onclick="generateVideoFromScript(${i})">Generate Video</button>
         <button class="action-btn" onclick="addScriptToQueue(${i})">Add to Queue</button>
       </div>
     </div>
@@ -1168,21 +1168,92 @@ function viewScript(i) {
   if (!s) return;
   currentModalIdx = i;
   const body = document.getElementById('modal-script-body');
-  if (body) body.textContent = typeof s.script === 'object' ? (s.script.script || JSON.stringify(s.script, null, 2)) : s.script;
+  if (!body) return;
+  const sc = s.script;
+  if (typeof sc === 'object' && sc.scenes) {
+    // Render per-scene format
+    const lines = [];
+    if (sc.title) lines.push(sc.title + '\n');
+    sc.scenes.forEach((scene, idx) => {
+      const dur = scene.duration_hint === 'medium' ? '10s' : '5s';
+      lines.push(`Scene ${idx + 1} (${dur})`);
+      if (scene.narration) lines.push('  VO: ' + scene.narration);
+      if (scene.visual) lines.push('  Visual: ' + scene.visual);
+      if (scene.text_overlay) lines.push('  Text: ' + scene.text_overlay);
+      lines.push('');
+    });
+    // Legacy single-script field
+    if (sc.script) lines.push('Full VO: ' + sc.script);
+    body.textContent = lines.join('\n');
+  } else {
+    body.textContent = typeof sc === 'object' ? JSON.stringify(sc, null, 2) : sc;
+  }
   document.getElementById('script-modal')?.classList.add('open');
 }
 
-function copyScriptForInVideo(i) {
+async function generateVideoFromScript(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const scriptText = typeof s.script === 'object' ? (s.script.invideo_prompt || s.script.script || '') : s.script;
-  const match = scriptText.match(/INVIDEO PROMPT:\s*\n([\s\S]*?)(?=\nVOICEOVER:|\n\n[A-Z]+:)/);
-  const invideoPrompt = match ? match[1].trim() : (typeof s.script === 'object' ? (s.script.invideo_prompt || scriptText) : scriptText);
-  navigator.clipboard.writeText(invideoPrompt).then(() => {
-    showToast('Copied InVideo prompt!');
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS URL in Settings'); return; }
+
+  // Find the button that was clicked and show progress
+  const modalBtn = document.querySelector('#script-modal .gen-btn');
+  const cardBtns = document.querySelectorAll('.script-card .action-btn.primary');
+  const btn = modalBtn || (cardBtns[i] ? cardBtns[i] : null);
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating audio...'; }
+
+  const progressMsgs = [
+    [5000, 'Generating voiceover...'],
+    [15000, 'Creating scene clips...'],
+    [45000, 'Scenes rendering on fal...'],
+    [90000, 'Stitching video...'],
+    [120000, 'Almost done...'],
+  ];
+  const timers = progressMsgs.map(([ms, msg]) =>
+    setTimeout(() => { if (btn && btn.disabled) btn.textContent = msg; }, ms)
+  );
+
+  try {
+    const res = await fetch(vpsUrl + '/generate-video', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({script: s.script}),
+      signal: AbortSignal.timeout(300000),
+    });
+    const data = await res.json();
+    if (!res.ok || data.status === 'error') {
+      showToast('Video error: ' + (data.message || 'Unknown error'));
+      return;
+    }
+    // Auto-add to queue with the video path
     autoFillFromScript(s.script);
+    const meta = extractMetaFromScript(s.script);
+    const item = {
+      id: Date.now(),
+      title: meta.title || s.topic || 'Untitled Video',
+      description: meta.description,
+      tags: meta.tags,
+      script: s.script,
+      video_path: data.video_path || '',
+      filename: data.filename || '',
+      status: 'ready',
+      created_at: new Date().toISOString(),
+    };
+    const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
+    queue.unshift(item);
+    localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
     document.getElementById('script-modal')?.classList.remove('open');
-  });
+    showToast('Video generated! Added to queue.');
+    renderManualQueue();
+    showTab('queue');
+  } catch(e) {
+    if (e.name === 'AbortError' || e.name === 'TimeoutError') { showToast('Video generation timed out — try again'); }
+    else { showToast('Cannot reach VPS — check Settings'); }
+  } finally {
+    timers.forEach(clearTimeout);
+    if (btn) { btn.disabled = false; btn.textContent = btn.closest('#script-modal') ? 'Generate Video' : 'Generate Video'; }
+  }
 }
 
 function addScriptToQueue(i) {
@@ -1254,7 +1325,7 @@ function renderManualQueue() {
   if (!container) return;
   let queue = [];
   try { queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]'); } catch(e) { queue = []; }
-  if (!queue.length) { container.innerHTML = '<div class="empty-state">No videos ready — generate a script, create in InVideo, then add to queue</div>'; return; }
+  if (!queue.length) { container.innerHTML = '<div class="empty-state">No videos ready — generate a script, then click Generate Video</div>'; return; }
   try {
   container.innerHTML = queue.map((item, idx) => `
     <div class="queue-item">
