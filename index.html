@@ -1493,13 +1493,15 @@ async function postQueueItem(idx) {
       })
     });
     const data = await res.json();
-    if (data.success) {
+    if (res.ok && data.status === 'ok') {
       queue[idx].status = 'posted';
+      queue[idx].youtube_url = data.url || '';
       localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-      showToast('Posted to YouTube!');
+      showToast('Posted to YouTube!' + (data.url ? ' ' + data.url : ''));
       renderManualQueue();
     } else {
-      showToast(data.error?.includes('quota') ? 'Quota exceeded — try after midnight' : 'Upload failed: ' + data.error);
+      const msg = data.message || data.error || 'Unknown error';
+      showToast(msg.includes('quota') ? 'Quota exceeded — try after midnight' : 'Upload failed: ' + msg);
     }
   } catch(e) { showToast('Cannot reach VPS'); }
 }
