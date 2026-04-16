@@ -637,11 +637,12 @@ nav {
   letter-spacing: 2px;
   opacity: 0;
   transition: all 0.3s;
-  pointer-events: none;
   z-index: 999;
   white-space: nowrap;
+  cursor: pointer;
+  user-select: text;
 }
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
 
 /* ── LOADING ── */
 .loading-dots::after {
@@ -943,12 +944,16 @@ function showTab(tab) {
 }
 
 // ── TOAST ──
+let _toastTimer = null;
 function showToast(msg) {
   const t = document.getElementById('toast');
   if (!t) return;
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
+  if (_toastTimer) clearTimeout(_toastTimer);
+  const isError = /error|cannot|failed|timeout/i.test(msg);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), isError ? 10000 : 3000);
+  t.onclick = () => { navigator.clipboard.writeText(msg); t.textContent = 'Copied!'; setTimeout(() => t.classList.remove('show'), 1000); };
 }
 
 // ── FORMAT ──
