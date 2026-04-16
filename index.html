@@ -1119,8 +1119,8 @@ async function generateScript() {
     });
     clearTimeout(timeoutId);
     const data = await res.json();
-    if (data.error) { showToast('Error: ' + data.error); return; }
-    const refinedTopic = data.refined_topic || topic;
+    if (!res.ok || data.status === 'error') { showToast('Error: ' + (data.error || data.message || 'Unknown error')); return; }
+    const refinedTopic = data.refined_topic || data.topic || topic;
     const scriptObj = {id: Date.now(), topic: refinedTopic, originalTopic: topic, platform, script: data.script, research: data.research || '', generated_at: new Date().toISOString()};
     state.scripts.unshift(scriptObj);
     renderScripts();
@@ -1148,7 +1148,7 @@ function renderScripts() {
           <div class="script-meta-label">${s.platform.toUpperCase()} · ${new Date(s.generated_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${s.originalTopic && s.originalTopic !== s.topic ? ' · refined from: ' + s.originalTopic.substring(0,40) + '...' : ''}</div>
         </div>
       </div>
-      <div class="script-preview-text">${s.script.substring(0,180)}...</div>
+      <div class="script-preview-text">${(typeof s.script === 'object' ? (s.script.script || s.script.title || '') : s.script).substring(0,180)}...</div>
       <div class="script-actions">
         <button class="action-btn" onclick="viewScript(${i})">View Full</button>
         <button class="action-btn primary" onclick="copyScriptForInVideo(${i})">Copy for InVideo</button>
@@ -1163,15 +1163,16 @@ function viewScript(i) {
   if (!s) return;
   currentModalIdx = i;
   const body = document.getElementById('modal-script-body');
-  if (body) body.textContent = s.script;
+  if (body) body.textContent = typeof s.script === 'object' ? (s.script.script || JSON.stringify(s.script, null, 2)) : s.script;
   document.getElementById('script-modal')?.classList.add('open');
 }
 
 function copyScriptForInVideo(i) {
   const s = state.scripts[i];
   if (!s) return;
-  const match = s.script.match(/INVIDEO PROMPT:\s*\n([\s\S]*?)(?=\nVOICEOVER:|\n\n[A-Z]+:)/);
-  const invideoPrompt = match ? match[1].trim() : s.script;
+  const scriptText = typeof s.script === 'object' ? (s.script.invideo_prompt || s.script.script || '') : s.script;
+  const match = scriptText.match(/INVIDEO PROMPT:\s*\n([\s\S]*?)(?=\nVOICEOVER:|\n\n[A-Z]+:)/);
+  const invideoPrompt = match ? match[1].trim() : (typeof s.script === 'object' ? (s.script.invideo_prompt || scriptText) : scriptText);
   navigator.clipboard.writeText(invideoPrompt).then(() => {
     showToast('Copied InVideo prompt!');
     autoFillFromScript(s.script);
@@ -1205,6 +1206,14 @@ function addScriptToQueue(i) {
 // ── AUTO FILL ──
 function extractMetaFromScript(script) {
   if (!script) return {title:'', description:'', tags:[]};
+  // Backend returns script as {title, script, scenes, captions} object
+  if (typeof script === 'object') {
+    const title = script.title || '';
+    const captions = script.captions || {};
+    const description = captions.youtube || script.script || '';
+    const tags = ['AItools','ChatGPT','AI2026','shorts','artificialintelligence','aiwhileyousleeping','productivity','tech'];
+    return {title, description, tags, captions};
+  }
   const hookMatch = script.match(/HOOK:\s*(.+)/i);
   const hook = hookMatch ? hookMatch[1].trim().replace(/\*+/g,'').replace(/\[.*?\]/g,'').trim() : '';
   const ctaMatch = script.match(/CTA:\s*(.+)/i);
