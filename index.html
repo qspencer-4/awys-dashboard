@@ -656,6 +656,37 @@ nav {
   80%, 100% { content: '...'; }
 }
 
+/* ── VIDEO PROGRESS OVERLAY ── */
+.video-progress-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85); z-index: 1000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.video-progress-overlay.active { opacity: 1; pointer-events: auto; }
+.video-progress-label {
+  color: var(--white); font-size: 13px; letter-spacing: 3px;
+  text-transform: uppercase; margin-bottom: 24px;
+}
+.video-progress-bar-track {
+  width: 320px; height: 4px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+}
+.video-progress-bar-fill {
+  height: 100%; width: 0%; border-radius: 2px;
+  background: linear-gradient(90deg, #00f2ea, #FF4444);
+  transition: width 1.5s ease;
+}
+.video-progress-step {
+  color: var(--white-dim); font-size: 10px; letter-spacing: 2px;
+  margin-top: 16px; text-transform: uppercase;
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+.video-progress-step { animation: pulse-glow 2s ease-in-out infinite; }
+
 /* ── EMPTY STATE ── */
 .empty-state {
   padding: 48px;
@@ -910,6 +941,15 @@ nav {
   </div>
 </div>
 
+<!-- VIDEO PROGRESS OVERLAY -->
+<div class="video-progress-overlay" id="video-progress">
+  <div class="video-progress-label">Generating Video</div>
+  <div class="video-progress-bar-track">
+    <div class="video-progress-bar-fill" id="video-progress-bar"></div>
+  </div>
+  <div class="video-progress-step" id="video-progress-step">Preparing...</div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -918,7 +958,7 @@ nav {
 // ── STATE ──
 const state = {
   trends: [],
-  scripts: [],
+  scripts: JSON.parse(localStorage.getItem('awys-scripts') || '[]'),
   settings: {
     vpsUrl: '', antKey: '', ytKey: '', githubToken: '',
     githubRepo: 'qspencer-4/awys-dashboard',
@@ -1128,6 +1168,7 @@ async function generateScript() {
     const refinedTopic = data.refined_topic || data.topic || topic;
     const scriptObj = {id: Date.now(), topic: refinedTopic, originalTopic: topic, platform, script: data.script, research: data.research || '', generated_at: new Date().toISOString()};
     state.scripts.unshift(scriptObj);
+    localStorage.setItem('awys-scripts', JSON.stringify(state.scripts));
     renderScripts();
     autoFillFromScript(scriptObj.script);
     showToast('Script generated!');
@@ -1191,27 +1232,37 @@ function viewScript(i) {
   document.getElementById('script-modal')?.classList.add('open');
 }
 
+function _videoProgress(show, step, pct) {
+  const overlay = document.getElementById('video-progress');
+  const bar = document.getElementById('video-progress-bar');
+  const label = document.getElementById('video-progress-step');
+  if (show) { overlay.classList.add('active'); } else { overlay.classList.remove('active'); }
+  if (bar) bar.style.width = pct + '%';
+  if (label) label.textContent = step;
+}
+
 async function generateVideoFromScript(i) {
   const s = state.scripts[i];
   if (!s) return;
   const vpsUrl = state.settings.vpsUrl;
   if (!vpsUrl) { showToast('Add VPS URL in Settings'); return; }
 
-  // Find the button that was clicked and show progress
-  const modalBtn = document.querySelector('#script-modal .gen-btn');
-  const cardBtns = document.querySelectorAll('.script-card .action-btn.primary');
-  const btn = modalBtn || (cardBtns[i] ? cardBtns[i] : null);
-  if (btn) { btn.disabled = true; btn.textContent = 'Generating audio...'; }
+  document.getElementById('script-modal')?.classList.remove('open');
+  _videoProgress(true, 'Generating voiceover...', 5);
 
-  const progressMsgs = [
-    [5000, 'Generating voiceover...'],
-    [15000, 'Creating scene clips...'],
-    [45000, 'Scenes rendering on fal...'],
-    [90000, 'Stitching video...'],
-    [120000, 'Almost done...'],
+  const steps = [
+    [3000, 'Generating voiceover...', 15],
+    [8000, 'Voiceover complete — rendering scenes...', 25],
+    [20000, 'Scene 1 rendering on fal...', 35],
+    [40000, 'Scene 2 rendering...', 45],
+    [60000, 'Scene 3 rendering...', 55],
+    [80000, 'Scene 4 rendering...', 65],
+    [100000, 'Scene 5 rendering...', 75],
+    [130000, 'Stitching clips together...', 85],
+    [160000, 'Final encoding...', 92],
   ];
-  const timers = progressMsgs.map(([ms, msg]) =>
-    setTimeout(() => { if (btn && btn.disabled) btn.textContent = msg; }, ms)
+  const timers = steps.map(([ms, msg, pct]) =>
+    setTimeout(() => _videoProgress(true, msg, pct), ms)
   );
 
   try {
@@ -1223,9 +1274,14 @@ async function generateVideoFromScript(i) {
     });
     const data = await res.json();
     if (!res.ok || data.status === 'error') {
+      _videoProgress(false, '', 0);
       showToast('Video error: ' + (data.message || 'Unknown error'));
       return;
     }
+    _videoProgress(true, 'Done!', 100);
+    await new Promise(r => setTimeout(r, 800));
+    _videoProgress(false, '', 0);
+
     // Auto-add to queue with the video path
     autoFillFromScript(s.script);
     const meta = extractMetaFromScript(s.script);
@@ -1243,16 +1299,15 @@ async function generateVideoFromScript(i) {
     const queue = JSON.parse(localStorage.getItem('awys-manual-queue') || '[]');
     queue.unshift(item);
     localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
-    document.getElementById('script-modal')?.classList.remove('open');
     showToast('Video generated! Added to queue.');
     renderManualQueue();
     showTab('queue');
   } catch(e) {
+    _videoProgress(false, '', 0);
     if (e.name === 'AbortError' || e.name === 'TimeoutError') { showToast('Video generation timed out — try again'); }
     else { showToast('Cannot reach VPS — check Settings'); }
   } finally {
     timers.forEach(clearTimeout);
-    if (btn) { btn.disabled = false; btn.textContent = btn.closest('#script-modal') ? 'Generate Video' : 'Generate Video'; }
   }
 }
 
