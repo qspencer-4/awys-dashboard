@@ -777,6 +777,7 @@ nav {
 <nav>
   <button class="nav-tab active" onclick="showTab('generate')">Generate</button>
   <button class="nav-tab" onclick="showTab('queue')">Queue</button>
+  <button class="nav-tab" onclick="showTab('videos')">Videos</button>
   <button class="nav-tab" onclick="showTab('analytics')">Analytics</button>
   <button class="nav-tab" onclick="showTab('settings')">Settings</button>
 </nav>
@@ -876,6 +877,19 @@ nav {
 </div>
 
 <!-- SETTINGS TAB -->
+<!-- VIDEOS TAB -->
+<div class="panel" id="panel-videos">
+  <div style="padding:24px 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:600;color:var(--gold);">Generated Videos</div>
+      <button class="refresh-btn" onclick="loadVideos()">↻ Refresh</button>
+    </div>
+    <div id="videos-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
+      <div class="empty-state" style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">Loading<span class="loading-dots"></span></div>
+    </div>
+  </div>
+</div>
+
 <div class="panel" id="panel-settings">
   <div class="settings-layout">
 
@@ -980,7 +994,45 @@ function showTab(tab) {
   });
   if (tab === 'generate') { renderCategoryFilters(); renderTrends(); renderScripts(); if (!state.trends.length) loadTrends(); }
   if (tab === 'queue') { renderManualQueue(); initCountdowns(); }
+  if (tab === 'videos') { loadVideos(); }
   if (tab === 'analytics') { loadAnalytics(); }
+}
+
+// ── VIDEOS LIBRARY ──
+async function loadVideos() {
+  const vpsUrl = state.settings.vpsUrl;
+  const grid = document.getElementById('videos-grid');
+  if (!grid) return;
+  if (!vpsUrl) { grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">Add VPS URL in Settings first</div>'; return; }
+  grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">Loading<span class="loading-dots"></span></div>';
+  try {
+    const res = await fetch(vpsUrl + '/videos', {signal: AbortSignal.timeout(10000)});
+    const data = await res.json();
+    const videos = data.videos || [];
+    if (!videos.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">No videos yet. Generate one from the Generate tab.</div>'; return; }
+    grid.innerHTML = videos.map(v => {
+      const url = vpsUrl + v.download_url;
+      const date = new Date(v.modified * 1000).toLocaleString();
+      const dur = v.duration_seconds ? v.duration_seconds.toFixed(1) + 's' : '—';
+      const sizeMB = (v.size_bytes / 1048576).toFixed(1) + ' MB';
+      const shortName = v.filename.length > 28 ? v.filename.slice(0, 8) + '…' + v.filename.slice(-12) : v.filename;
+      return `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+        <video src="${esc(url)}" controls preload="metadata" style="width:100%;display:block;background:#000;aspect-ratio:9/16;max-height:480px;"></video>
+        <div style="padding:12px 14px;">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--white-dim);margin-bottom:6px;" title="${esc(v.filename)}">${esc(shortName)}</div>
+          <div style="font-size:12px;color:var(--white);margin-bottom:4px;">${dur} · ${sizeMB}</div>
+          <div style="font-size:11px;color:var(--white-dim);margin-bottom:10px;">${esc(date)}</div>
+          <div style="display:flex;gap:8px;">
+            <a href="${esc(url)}" target="_blank" class="gen-btn" style="flex:1;padding:8px;font-size:11px;text-decoration:none;text-align:center;display:inline-block;">Download</a>
+            <button class="action-btn" style="padding:8px 12px;font-size:11px;" onclick="navigator.clipboard.writeText('${esc(url)}').then(() => showToast('Link copied'))">Copy Link</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--danger);">Failed to load: ${esc(e.message)}</div>`;
+  }
 }
 
 // ── TOAST ──
