@@ -1302,16 +1302,18 @@ async function generateVideoFromScript(i) {
   document.getElementById('script-modal')?.classList.remove('open');
   _videoProgress(true, 'Generating voiceover...', 5);
 
+  // Replicate Minimax: ~2.5 min/clip x 7 clips sequential + TTS + ffmpeg ≈ 18-20 min.
   const steps = [
-    [3000, 'Generating voiceover...', 15],
-    [8000, 'Voiceover complete — rendering scenes...', 25],
-    [20000, 'Scene 1 rendering on fal...', 35],
-    [40000, 'Scene 2 rendering...', 45],
-    [60000, 'Scene 3 rendering...', 55],
-    [80000, 'Scene 4 rendering...', 65],
-    [100000, 'Scene 5 rendering...', 75],
-    [130000, 'Stitching clips together...', 85],
-    [160000, 'Final encoding...', 92],
+    [5000,    'Generating voiceovers (ElevenLabs)...', 5],
+    [40000,   'Voiceovers done — rendering scene 1 of 7 (Minimax)...', 10],
+    [180000,  'Rendering scene 2 of 7 (Minimax)...', 22],
+    [330000,  'Rendering scene 3 of 7 (Minimax)...', 34],
+    [480000,  'Rendering scene 4 of 7 (Minimax)...', 46],
+    [630000,  'Rendering scene 5 of 7 (Minimax)...', 58],
+    [780000,  'Rendering scene 6 of 7 (Minimax)...', 70],
+    [930000,  'Rendering scene 7 of 7 (Minimax)...', 82],
+    [1080000, 'Stitching clips + muxing audio...', 90],
+    [1170000, 'Final encode...', 95],
   ];
   const timers = steps.map(([ms, msg, pct]) =>
     setTimeout(() => _videoProgress(true, msg, pct), ms)
@@ -1322,7 +1324,7 @@ async function generateVideoFromScript(i) {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({script: s.script}),
-      signal: AbortSignal.timeout(300000),
+      signal: AbortSignal.timeout(1800000),
     });
     const data = await res.json();
     if (!res.ok || data.status === 'error') {
@@ -1355,6 +1357,7 @@ async function generateVideoFromScript(i) {
     localStorage.setItem('awys-manual-queue', JSON.stringify(queue));
     showToast('Video generated! Added to queue.');
     renderManualQueue();
+    loadVideos();
     showTab('queue');
   } catch(e) {
     _videoProgress(false, '', 0);
