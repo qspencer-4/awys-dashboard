@@ -658,7 +658,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.32</div>
+    <div class="version" id="version-label">v0.33</div>
   </div>
 </header>
 
@@ -1077,6 +1077,7 @@ function selectDay(ymd) {
     const dur = v.duration_seconds ? v.duration_seconds.toFixed(1)+'s' : '—';
     const sizeMB = (v.size_bytes/1048576).toFixed(1)+' MB';
     const titleLine = v.title ? `<div style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:6px;">${esc(v.title)}</div>` : '';
+    const expLine = v.experiment ? `<div style="font-size:11px;color:var(--white-dim);margin-bottom:6px;padding:6px 8px;background:var(--surface);border-left:2px solid var(--gold);border-radius:3px;"><span style="color:var(--gold);letter-spacing:1px;">EXPERIMENT</span> · ${esc(v.experiment)}</div>` : '';
     const scriptOpts = (_assemble?.scripts||[]).map(s=>{
       const t = (s.script && s.script.title) || s.topic || 'untitled';
       return `<option value="${s.id}">#${s.id} — ${esc(t.slice(0,40))}</option>`;
@@ -1088,6 +1089,7 @@ function selectDay(ymd) {
          </select>`;
     videoBlock = `<video src="${esc(url)}" controls preload="metadata"></video>
       ${titleLine}
+      ${expLine}
       <div style="font-size:11px;color:var(--white-dim);margin-bottom:8px;">${dur} · ${sizeMB}${videos.length>1?` · +${videos.length-1} more`:''}</div>
       <a href="${esc(url)}" target="_blank" class="action-btn" style="display:inline-block;padding:6px 10px;font-size:11px;text-decoration:none;margin-right:6px;">Download</a>
       ${postBtn}`;
