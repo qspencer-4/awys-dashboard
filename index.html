@@ -1030,27 +1030,68 @@ async function loadVideos() {
   if (!vpsUrl) { grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">Add VPS URL in Settings first</div>'; return; }
   grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">Loading<span class="loading-dots"></span></div>';
   try {
+    // Ensure _assemble.scripts is populated so the Link-to-Script dropdown has options
+    if (!_assemble.scripts || !_assemble.scripts.length) {
+      try {
+        const sr = await fetch(vpsUrl + '/scripts');
+        const sd = await sr.json();
+        _assemble.scripts = sd.scripts || [];
+      } catch(e) { /* non-fatal */ }
+    }
     const res = await fetch(vpsUrl + '/videos', {signal: AbortSignal.timeout(10000)});
     const data = await res.json();
     const videos = data.videos || [];
     if (!videos.length) { grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--white-dim);">No videos yet. Generate one from the Generate tab.</div>'; return; }
-    grid.innerHTML = videos.map(v => {
+    grid.innerHTML = videos.map((v, vi) => {
       const url = vpsUrl + v.download_url;
       const date = new Date(v.modified * 1000).toLocaleString();
       const dur = v.duration_seconds ? v.duration_seconds.toFixed(1) + 's' : '—';
       const sizeMB = (v.size_bytes / 1048576).toFixed(1) + ' MB';
       const shortName = v.filename.length > 28 ? v.filename.slice(0, 8) + '…' + v.filename.slice(-12) : v.filename;
+      const titleLine = v.title ? `<div style="font-size:12px;color:var(--gold);margin-bottom:4px;font-weight:600;">${esc(v.title)}</div>` : '';
+      const scriptOptions = (_assemble.scripts || []).map(s => {
+        const t = (s.script && s.script.title) || s.topic || 'untitled';
+        return `<option value="${s.id}">#${s.id} — ${esc(t.slice(0,50))}</option>`;
+      }).join('');
+      const postBtn = v.script_id
+        ? `<button class="gen-btn" style="padding:8px;font-size:11px;flex:1;" onclick="postToYouTube('${esc(v.filename)}', ${v.script_id})">Post to YouTube</button>`
+        : `<select class="settings-input" style="flex:1;font-size:11px;padding:6px 8px;" onchange="linkVideoToScript('${esc(v.filename)}', this.value)">
+             <option value="">Link to script…</option>
+             ${scriptOptions}
+           </select>`;
+      const captionsBtn = v.captions
+        ? `<button class="action-btn" style="padding:8px 12px;font-size:11px;" onclick="toggleVideoCaptions(${vi})">Captions</button>`
+        : '';
+      const capBlock = (label, text, extra) => !text ? '' : `
+        <div style="background:#0a0a0a;border:1px solid var(--border);border-radius:4px;padding:8px;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div style="font-size:10px;letter-spacing:2px;color:var(--gold);">${label}</div>
+            <button class="action-btn" style="font-size:9px;padding:2px 6px;" onclick="navigator.clipboard.writeText(${JSON.stringify(text + (extra||''))}).then(()=>showToast('${label} copied'))">Copy</button>
+          </div>
+          <div style="font-size:11px;color:var(--white);white-space:pre-wrap;font-family:var(--mono);line-height:1.4;">${esc(text)}${extra ? `<div style=\"color:var(--white-dim);font-size:10px;margin-top:4px;\">${esc(extra)}</div>` : ''}</div>
+        </div>`;
+      const captionsPanel = v.captions ? `
+        <div id="video-captions-${vi}" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px;">
+          ${capBlock('YOUTUBE TITLE', v.captions.youtube_title)}
+          ${capBlock('YOUTUBE DESCRIPTION', v.captions.youtube_description)}
+          ${capBlock('TIKTOK', v.captions.tiktok)}
+          ${capBlock('INSTAGRAM', v.captions.instagram, v.captions.instagram_hashtags ? '\n\nHashtags (first comment):\n' + v.captions.instagram_hashtags : '')}
+          ${capBlock('FACEBOOK', v.captions.facebook)}
+        </div>` : '';
       return `
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
         <video src="${esc(url)}" controls preload="metadata" style="width:100%;display:block;background:#000;aspect-ratio:9/16;max-height:480px;"></video>
         <div style="padding:12px 14px;">
+          ${titleLine}
           <div style="font-family:var(--mono);font-size:11px;color:var(--white-dim);margin-bottom:6px;" title="${esc(v.filename)}">${esc(shortName)}</div>
           <div style="font-size:12px;color:var(--white);margin-bottom:4px;">${dur} · ${sizeMB}</div>
           <div style="font-size:11px;color:var(--white-dim);margin-bottom:10px;">${esc(date)}</div>
-          <div style="display:flex;gap:8px;">
-            <a href="${esc(url)}" target="_blank" class="gen-btn" style="flex:1;padding:8px;font-size:11px;text-decoration:none;text-align:center;display:inline-block;">Download</a>
-            <button class="action-btn" style="padding:8px 12px;font-size:11px;" onclick="navigator.clipboard.writeText('${esc(url)}').then(() => showToast('Link copied'))">Copy Link</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <a href="${esc(url)}" target="_blank" class="gen-btn" style="padding:8px;font-size:11px;text-decoration:none;text-align:center;display:inline-block;flex:1;">Download</a>
+            ${postBtn}
+            ${captionsBtn}
           </div>
+          ${captionsPanel}
         </div>
       </div>`;
     }).join('');
@@ -1089,6 +1130,31 @@ async function triggerDailyGen(){
     await fetch(vpsUrl + '/daily/run', {method:'POST'});
     setTimeout(()=>{ previewDailyPick(); }, 30000);
   } catch(e){ showToast('Error: '+e.message); }
+}
+
+function toggleVideoCaptions(idx) {
+  const el = document.getElementById('video-captions-' + idx);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+async function linkVideoToScript(filename, scriptId) {
+  if (!scriptId) return;
+  const vpsUrl = state.settings.vpsUrl;
+  showToast('Linking script #' + scriptId + '…');
+  try {
+    const r = await fetch(vpsUrl + '/videos/link-script', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({filename, script_id: parseInt(scriptId, 10)})
+    });
+    const j = await r.json();
+    if (j.status === 'ok') {
+      showToast('Linked — reloading videos');
+      loadVideos();
+    } else {
+      showToast('Error: ' + (j.message||'unknown'));
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 // ── YOUTUBE PUBLISH ──
