@@ -1091,6 +1091,29 @@ async function triggerDailyGen(){
   } catch(e){ showToast('Error: '+e.message); }
 }
 
+// ── YOUTUBE PUBLISH ──
+async function postToYouTube(filename, scriptId) {
+  const vpsUrl = state.settings.vpsUrl;
+  if (!confirm('Publish to YouTube as a PUBLIC Short? This uses your authenticated channel.')) return;
+  showToast('Publishing to YouTube…');
+  try {
+    const r = await fetch(vpsUrl + '/youtube/publish', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({filename, script_id: scriptId}),
+    });
+    const j = await r.json();
+    if (j.status === 'ok') {
+      showToast('Published: ' + j.url);
+      window.open(j.url, '_blank');
+    } else if (j.need_auth) {
+      if (confirm('YouTube not connected. Open OAuth flow?')) window.open(vpsUrl + '/youtube/auth-start', '_blank');
+    } else {
+      showToast('Error: ' + (j.message||'unknown'));
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
 // ── DRIVE INBOX (public-folder auto-import) ──
 const _drive = { inbox: [] };
 
@@ -1390,13 +1413,33 @@ async function runAssemble() {
     const j = await res.json();
     if (j.status === 'ok') {
       const url = vpsUrl + j.download_url;
-      resultDiv.innerHTML = `
-        <div style="padding:20px;background:var(--surface);border:1px solid var(--gold);border-radius:8px;text-align:center;">
-          <div style="color:var(--gold);font-weight:600;margin-bottom:12px;">Video assembled — saved to Videos tab</div>
-          <video src="${esc(url)}" controls style="max-width:360px;border-radius:6px;background:#000;aspect-ratio:9/16;max-height:480px;"></video>
-          <div style="margin-top:12px;">
-            <a href="${esc(url)}" target="_blank" class="gen-btn" style="padding:8px 16px;font-size:12px;text-decoration:none;display:inline-block;">Download MP4</a>
+      // Find the caption payload from the currently loaded script
+      const scriptEntry = _assemble.scripts.find(s => s.id === _assemble.scriptId);
+      const captions = (scriptEntry && scriptEntry.script && scriptEntry.script.captions) || {};
+      const capBlock = (label, platform, text, extra) => !text ? '' : `
+        <div style="background:#0a0a0a;border:1px solid var(--border);border-radius:6px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+            <div style="font-size:11px;letter-spacing:2px;color:var(--gold);">${label}</div>
+            <button class="action-btn" style="font-size:10px;padding:3px 8px;" onclick="navigator.clipboard.writeText(${JSON.stringify(text + (extra||''))}).then(()=>showToast('${label} copied'))">Copy</button>
           </div>
+          <div style="font-size:12px;color:var(--white);white-space:pre-wrap;font-family:var(--mono);line-height:1.5;">${esc(text)}${extra ? `<div style=\"color:var(--white-dim);font-size:11px;margin-top:6px;\">${esc(extra)}</div>` : ''}</div>
+        </div>`;
+      resultDiv.innerHTML = `
+        <div style="padding:20px;background:var(--surface);border:1px solid var(--gold);border-radius:8px;">
+          <div style="color:var(--gold);font-weight:600;margin-bottom:12px;text-align:center;">Video assembled</div>
+          <div style="text-align:center;margin-bottom:16px;">
+            <video src="${esc(url)}" controls style="max-width:360px;border-radius:6px;background:#000;aspect-ratio:9/16;max-height:480px;"></video>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;">
+            <a href="${esc(url)}" target="_blank" class="gen-btn" style="padding:8px 16px;font-size:12px;text-decoration:none;display:inline-block;">Download MP4</a>
+            <button class="gen-btn" style="padding:8px 16px;font-size:12px;" onclick="postToYouTube('${esc(j.filename)}', ${_assemble.scriptId})">Post to YouTube</button>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:8px;">Captions & Hashtags</div>
+          ${capBlock('YOUTUBE TITLE', 'youtube_title', captions.youtube_title)}
+          ${capBlock('YOUTUBE DESCRIPTION', 'youtube_description', captions.youtube_description)}
+          ${capBlock('TIKTOK', 'tiktok', captions.tiktok)}
+          ${capBlock('INSTAGRAM', 'instagram', captions.instagram, captions.instagram_hashtags ? '\n\nFirst-comment hashtags:\n' + captions.instagram_hashtags : '')}
+          ${capBlock('FACEBOOK', 'facebook', captions.facebook)}
         </div>`;
       showToast('Video assembled');
     } else {
