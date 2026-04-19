@@ -775,7 +775,7 @@ nav {
 
 <!-- NAV -->
 <nav>
-  <button class="nav-tab active" onclick="showTab('generate')">Generate</button>
+  <button class="nav-tab active" onclick="showTab('generate')">Trends</button>
   <button class="nav-tab" onclick="showTab('assemble')">Assemble</button>
   <button class="nav-tab" onclick="showTab('queue')">Queue</button>
   <button class="nav-tab" onclick="showTab('videos')">Videos</button>
@@ -783,56 +783,28 @@ nav {
   <button class="nav-tab" onclick="showTab('settings')">Settings</button>
 </nav>
 
-<!-- GENERATE TAB -->
+<!-- TRENDS TAB (read-only; daily auto-pick generates the script at 6am MDT) -->
 <div class="panel active" id="panel-generate">
-  <div class="generate-layout">
-
-    <!-- LEFT: TRENDS -->
-    <div class="trends-panel">
-      <div class="trends-header">
-        <div class="panel-label">Trending Now</div>
+  <div style="padding:0 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div>
+        <div style="font-size:18px;font-weight:600;color:var(--gold);">Trending Topics</div>
+        <div style="font-size:12px;color:var(--white-dim);margin-top:4px;">
+          Auto-scraped every 30 min. A daily script is auto-generated at 6:00 AM MDT from the top unused pick.
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
         <button class="refresh-btn" onclick="loadTrends()">↻ Refresh</button>
-      </div>
-      <div class="category-filters" id="category-filters">
-        <button class="cat-filter-btn active" onclick="filterByCategory('all')">ALL</button>
-      </div>
-      <div class="trends-list" id="trends-list">
-        <div class="empty-state">Hit Refresh to load live trends<span class="loading-dots"></span></div>
+        <button class="action-btn" onclick="previewDailyPick()" style="font-size:11px;">Preview Today's Pick</button>
+        <button class="gen-btn" onclick="triggerDailyGen()" style="padding:6px 14px;font-size:11px;">Run Daily Now</button>
       </div>
     </div>
-
-    <!-- RIGHT: SCRIPT -->
-    <div class="script-panel">
-
-      <!-- Controls -->
-      <div class="script-controls">
-        <div class="control-group">
-          <div class="control-label">Topic</div>
-          <input class="control-input" id="script-topic" placeholder="Select a trend or type your own...">
-        </div>
-        <div class="control-group" style="max-width:160px">
-          <div class="control-label">Platform</div>
-          <select class="control-select control-input" id="script-platform">
-            <option value="youtube">YouTube Shorts</option>
-            <option value="tiktok">TikTok</option>
-            <option value="instagram">Instagram Reels</option>
-            <option value="facebook">Facebook Reels</option>
-          </select>
-        </div>
-        <button class="gen-btn" id="gen-btn" onclick="generateScript()">Generate Script</button>
-      </div>
-
-      <!-- Output -->
-      <div class="script-output">
-        <div class="script-output-header">
-          <div class="panel-label">Generated Scripts</div>
-          <div id="script-count" style="font-size:10px;color:var(--white-dim)">0 scripts</div>
-        </div>
-        <div class="script-output-body" id="scripts-container">
-          <div class="script-empty">Generate a script to get started</div>
-        </div>
-      </div>
-
+    <div id="daily-preview" style="margin-bottom:14px;"></div>
+    <div class="category-filters" id="category-filters" style="margin-bottom:12px;">
+      <button class="cat-filter-btn active" onclick="filterByCategory('all')">ALL</button>
+    </div>
+    <div class="trends-list" id="trends-list">
+      <div class="empty-state">Hit Refresh to load live trends<span class="loading-dots"></span></div>
     </div>
   </div>
 </div>
@@ -1068,6 +1040,38 @@ async function loadVideos() {
   } catch(e) {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--danger);">Failed to load: ${esc(e.message)}</div>`;
   }
+}
+
+// ── DAILY PICK (preview + manual trigger) ──
+async function previewDailyPick(){
+  const vpsUrl = state.settings.vpsUrl;
+  const box = document.getElementById('daily-preview');
+  if (!vpsUrl || !box) return;
+  box.innerHTML = '<div style="padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--white-dim);">Loading…</div>';
+  try {
+    const r = await fetch(vpsUrl + '/daily/next-pick');
+    const d = await r.json();
+    const t = d.topic;
+    if (!t){ box.innerHTML = '<div style="padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--white-dim);">No eligible topic — all trends were used in the last 14 days.</div>'; return; }
+    box.innerHTML = `
+      <div style="padding:12px 14px;background:var(--surface);border:1px solid var(--gold);border-radius:8px;">
+        <div style="font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:4px;">NEXT DAILY PICK</div>
+        <div style="font-size:14px;color:var(--white);margin-bottom:4px;">${esc(t.title)}</div>
+        <div style="font-size:11px;color:var(--white-dim);">${esc(t.source||'')} · niche score ${t.niche_score}</div>
+      </div>`;
+  } catch(e){
+    box.innerHTML = `<div style="padding:10px;background:var(--surface);border:1px solid var(--danger);border-radius:8px;font-size:12px;color:var(--danger);">${esc(e.message)}</div>`;
+  }
+}
+
+async function triggerDailyGen(){
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('VPS URL not set'); return; }
+  showToast('Daily generation started — script will appear in Assemble in ~30s');
+  try {
+    await fetch(vpsUrl + '/daily/run', {method:'POST'});
+    setTimeout(()=>{ previewDailyPick(); }, 30000);
+  } catch(e){ showToast('Error: '+e.message); }
 }
 
 // ── ASSEMBLE (manual Veo clips → finished video) ──
