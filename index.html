@@ -658,7 +658,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.31</div>
+    <div class="version" id="version-label">v0.32</div>
   </div>
 </header>
 
@@ -724,14 +724,9 @@ nav {
       <div id="drive-status" style="margin-top:8px;font-size:11px;color:var(--white-dim);"></div>
     </div>
 
-    <div class="settings-row" style="margin-bottom:16px;">
-      <div style="flex:1;">
-        <div class="settings-label">Script</div>
-        <div class="settings-sub">Pick an existing generated script</div>
-      </div>
-      <select class="settings-input" id="assemble-script-select" style="min-width:320px;" onchange="onAssembleScriptChange()">
-        <option value="">— choose a script —</option>
-      </select>
+    <div class="settings-section" id="assemble-script-header" style="margin-bottom:16px;">
+      <div style="font-size:11px;letter-spacing:3px;color:var(--white-dim);">TODAY'S SCRIPT</div>
+      <div style="font-size:14px;color:var(--white-dim);margin-top:6px;">No script yet — elect a trend from the Trends tab or hit "Run Daily Now".</div>
     </div>
 
     <!-- Clips Inbox: Drive-imported clips available to assign -->
@@ -1343,43 +1338,34 @@ const _assemble = { scripts: [], scenes: [], uploaded: {}, scriptId: null };
 
 async function loadAssembleScripts() {
   const vpsUrl = state.settings.vpsUrl;
-  const sel = document.getElementById('assemble-script-select');
-  if (!vpsUrl || !sel) return;
+  const header = document.getElementById('assemble-script-header');
+  if (!vpsUrl || !header) return;
   try {
     const res = await fetch(vpsUrl + '/scripts', {signal: AbortSignal.timeout(10000)});
     const data = await res.json();
     _assemble.scripts = data.scripts || [];
-    sel.innerHTML = '<option value="">— choose a script —</option>' +
-      _assemble.scripts.map(s => {
-        const title = (s.script && s.script.title) || s.topic || 'untitled';
-        return `<option value="${s.id}">#${s.id} — ${esc(title.slice(0,80))}</option>`;
-      }).join('');
-    // Pick script: newest always wins if it was created today after 6am MDT
-    // (the daily cron), else fall back to the user's last selection.
-    const savedId = localStorage.getItem('awys_selected_script_id');
     const newest = _assemble.scripts[0];  // /scripts returns newest first
-    const todaysDailyCutoff = new Date();
-    todaysDailyCutoff.setHours(6, 0, 0, 0);  // naive local 6am — good enough
-    const newestIsDaily = newest && new Date(newest.created_at) >= todaysDailyCutoff;
-    let pickId = '';
-    if (newestIsDaily && String(newest.id) !== savedId) {
-      pickId = String(newest.id);  // auto-switch to today's daily pick
-    } else if (savedId && _assemble.scripts.some(s => String(s.id) === savedId)) {
-      pickId = savedId;
-    } else if (newest) {
-      pickId = String(newest.id);
+    if (!newest) {
+      header.innerHTML = `
+        <div style="font-size:11px;letter-spacing:3px;color:var(--white-dim);">TODAY'S SCRIPT</div>
+        <div style="font-size:14px;color:var(--white-dim);margin-top:6px;">No script yet — elect a trend from the Trends tab or hit "Run Daily Now".</div>`;
+      return;
     }
-    if (pickId) {
-      sel.value = pickId;
-      await onAssembleScriptChange();
-    }
+    const title = (newest.script && newest.script.title) || newest.topic || 'untitled';
+    const created = new Date(newest.created_at);
+    const when = created.toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+    header.innerHTML = `
+      <div style="font-size:11px;letter-spacing:3px;color:var(--gold);">TODAY'S SCRIPT · #${newest.id}</div>
+      <div style="font-size:16px;font-weight:600;color:var(--white);margin-top:6px;">${esc(title)}</div>
+      <div style="font-size:11px;color:var(--white-dim);margin-top:4px;">${esc(newest.topic || '')} · generated ${when}</div>
+      <div style="font-size:11px;color:var(--white-dim);margin-top:6px;">Elect a different trend from the Trends tab to replace this.</div>`;
+    await onAssembleScriptChange(newest.id);
   } catch(e) {
     showToast('Failed to load scripts: ' + e.message);
   }
 }
 
-async function onAssembleScriptChange() {
-  const sel = document.getElementById('assemble-script-select');
+async function onAssembleScriptChange(scriptId) {
   const scenesDiv = document.getElementById('assemble-scenes');
   const resultDiv = document.getElementById('assemble-result');
   _assemble.uploaded = {};
@@ -1388,16 +1374,15 @@ async function onAssembleScriptChange() {
   resultDiv.innerHTML = '';
   scenesDiv.innerHTML = '';
   refreshAssembleBtn();
-  if (!sel.value) { localStorage.removeItem('awys_selected_script_id'); return; }
-  localStorage.setItem('awys_selected_script_id', sel.value);
+  if (!scriptId) return;
 
   const vpsUrl = state.settings.vpsUrl;
-  const res = await fetch(vpsUrl + '/scripts/' + sel.value);
+  const res = await fetch(vpsUrl + '/scripts/' + scriptId);
   const data = await res.json();
   const script = data.script && data.script.script;
   if (!script) { showToast('Script payload missing'); return; }
   _assemble.scenes = script.scenes || [];
-  _assemble.scriptId = parseInt(sel.value, 10);
+  _assemble.scriptId = parseInt(scriptId, 10);
 
   // Show cast summary if screenplay-format (characters + lines)
   const characters = (data.script && data.script.script && data.script.script.characters) || [];
@@ -1725,14 +1710,30 @@ function renderTrends() {
   }).join('');
 }
 
-function useTrend(i) {
+async function useTrend(i) {
   const trend = state.trends[i];
   if (!trend) return;
+  if (!confirm(`Elect this trend as today's script?\n\n"${trend.title}"\n\nThis replaces the current Assemble script and generates a new one (~30-60s).`)) return;
+  const vpsUrl = state.settings.vpsUrl;
+  if (!vpsUrl) { showToast('Add VPS URL in Settings'); return; }
   document.querySelectorAll('.trend-item').forEach(el => el.classList.remove('selected'));
   document.getElementById('trend-' + i)?.classList.add('selected');
-  const el = document.getElementById('script-topic');
-  if (el) { el.value = trend.title; el.focus(); }
   state._selectedCategory = trend.category || '';
+  showToast('Generating script from trend...');
+  try {
+    const res = await fetch(vpsUrl + '/generate-script', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({topic: trend.title}),
+      signal: AbortSignal.timeout(120000),
+    });
+    const data = await res.json();
+    if (!res.ok || data.status === 'error') { showToast('Error: ' + (data.message || 'Unknown')); return; }
+    showToast('Script ready — opening Assemble');
+    showTab('assemble');
+  } catch(e) {
+    showToast(e.name === 'AbortError' || e.name === 'TimeoutError' ? 'Generation timed out — try again' : 'Cannot reach VPS');
+  }
 }
 
 // ── SCRIPT GENERATION ──
