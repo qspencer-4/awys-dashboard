@@ -769,7 +769,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.27</div>
+    <div class="version" id="version-label">v0.28</div>
   </div>
 </header>
 
@@ -1430,8 +1430,8 @@ function renderDriveInbox() {
   box.innerHTML = `
     <div class="settings-section" style="margin-bottom:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-size:13px;font-weight:600;color:var(--gold);">Clips Inbox (${_drive.inbox.length})</div>
-        <div style="font-size:11px;color:var(--white-dim);">From your Drive folder · click Assign below each clip</div>
+        <div style="font-size:13px;font-weight:600;color:var(--gold);">Today's Clips (${_drive.inbox.length})</div>
+        <div style="font-size:11px;color:var(--white-dim);">Drive clips imported today · resets each new day</div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
         ${_drive.inbox.map(c => `
