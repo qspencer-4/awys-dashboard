@@ -1321,7 +1321,6 @@ async function onAssembleScriptChange() {
   // Restore any previously-assigned clips for this script
   const savedKey = 'awys_assigned_' + _assemble.scriptId;
   const saved = JSON.parse(localStorage.getItem(savedKey) || '{}');
-  const vpsUrl = state.settings.vpsUrl;
   for (const [idx, filename] of Object.entries(saved)) {
     const i = parseInt(idx, 10);
     const slot = document.getElementById('assemble-slot-' + i);
