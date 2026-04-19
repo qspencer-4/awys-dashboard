@@ -1111,15 +1111,34 @@ async function onAssembleScriptChange() {
   _assemble.scenes = script.scenes || [];
   _assemble.scriptId = parseInt(sel.value, 10);
 
-  scenesDiv.innerHTML = _assemble.scenes.map((s, i) => `
+  // Show cast summary if screenplay-format (characters + lines)
+  const characters = (data.script && data.script.script && data.script.script.characters) || [];
+  const castHtml = characters.length ? `
+    <div class="settings-section" style="margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:8px;">Cast</div>
+      ${characters.map(c => `
+        <div style="font-size:12px;color:var(--white);margin-bottom:4px;">
+          <b>${esc(c.name||'')}</b> <span style="color:var(--white-dim);">(voice: ${esc(c.voice_name||'default')})</span> — ${esc(c.description||'')}
+        </div>`).join('')}
+    </div>` : '';
+
+  scenesDiv.innerHTML = castHtml + _assemble.scenes.map((s, i) => {
+    const lines = s.lines || [];
+    const dialogueHtml = lines.length
+      ? lines.map(l => `<div style="font-size:12px;color:var(--white-dim);margin-bottom:4px;"><b style="color:var(--white);">${esc(l.character||'')}:</b> <i>"${esc(l.text||'')}"</i></div>`).join('')
+      : `<div style="font-size:12px;color:var(--white-dim);font-style:italic;margin-bottom:8px;">"${esc(s.narration||'')}"</div>`;
+    const actionHtml = s.action ? `<div style="font-size:11px;color:var(--white-dim);margin-bottom:6px;">↳ ${esc(s.action)}</div>` : '';
+    return `
     <div class="settings-section" id="assemble-slot-${i}" style="margin-bottom:12px;">
       <div style="display:flex;gap:16px;align-items:flex-start;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:4px;">
             Scene ${i+1} · <span style="font-family:var(--mono);letter-spacing:1px;">${esc(s.text_overlay||'')}</span>
           </div>
-          <div style="font-size:12px;color:var(--white-dim);font-style:italic;margin-bottom:8px;">"${esc(s.narration||'')}"</div>
-          <div style="font-size:10px;color:var(--white-dim);letter-spacing:1px;margin-bottom:4px;">VEO PROMPT — paste this into Google AI Studio</div>
+          ${s.setting ? `<div style="font-size:10px;color:var(--white-dim);letter-spacing:1px;margin-bottom:4px;">SETTING: ${esc(s.setting)}</div>` : ''}
+          ${actionHtml}
+          ${dialogueHtml}
+          <div style="font-size:10px;color:var(--white-dim);letter-spacing:1px;margin-bottom:4px;margin-top:8px;">VEO PROMPT — paste into AI Studio</div>
           <textarea readonly style="width:100%;height:70px;font-family:var(--mono);font-size:11px;background:#0a0a0a;color:#ccc;border:1px solid var(--border);border-radius:6px;padding:8px;resize:vertical;" onclick="this.select()">${esc(s.visual||'')}</textarea>
           <button class="action-btn" style="font-size:11px;padding:6px 12px;margin-top:6px;" onclick="navigator.clipboard.writeText(${JSON.stringify(s.visual||'')}).then(() => showToast('Prompt copied'))">Copy Prompt</button>
         </div>
@@ -1131,7 +1150,8 @@ async function onAssembleScriptChange() {
           <div id="assemble-preview-${i}" style="margin-top:8px;"></div>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   _assemble.scenes.forEach((_, i) => {
     const drop = document.getElementById('assemble-drop-' + i);
