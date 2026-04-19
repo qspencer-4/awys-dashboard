@@ -816,10 +816,24 @@ nav {
       <div>
         <div style="font-size:18px;font-weight:600;color:var(--gold);">Assemble Video from Veo Clips</div>
         <div style="font-size:12px;color:var(--white-dim);margin-top:4px;">
-          Generate 4 clips in Google AI Studio, drop them here — we add voiceover, captions, and stitch.
+          Generate 4 clips in Google AI Studio, save to your Drive folder, assign them to scenes — we add voiceover, captions, and stitch.
         </div>
       </div>
-      <button class="refresh-btn" onclick="loadAssembleScripts()">↻ Refresh scripts</button>
+      <button class="refresh-btn" onclick="loadAssembleScripts(); loadDriveInbox();">↻ Refresh</button>
+    </div>
+
+    <!-- Drive folder config -->
+    <div class="settings-section" style="margin-bottom:16px;">
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+        <div style="flex:1;min-width:280px;">
+          <div class="settings-label">Google Drive folder</div>
+          <div class="settings-sub">Paste the share URL of your public "Anyone with the link" Drive folder. We poll every 60s for new videos.</div>
+          <input class="settings-input" id="drive-folder-input" style="width:100%;" placeholder="https://drive.google.com/drive/folders/...">
+        </div>
+        <button class="gen-btn" style="padding:8px 14px;font-size:12px;" onclick="saveDriveFolder()">Save + Sync</button>
+        <button class="action-btn" style="padding:8px 14px;font-size:12px;" onclick="syncDriveNow()">Sync Now</button>
+      </div>
+      <div id="drive-status" style="margin-top:8px;font-size:11px;color:var(--white-dim);"></div>
     </div>
 
     <div class="settings-row" style="margin-bottom:16px;">
@@ -831,6 +845,9 @@ nav {
         <option value="">— choose a script —</option>
       </select>
     </div>
+
+    <!-- Clips Inbox: Drive-imported clips available to assign -->
+    <div id="assemble-inbox"></div>
 
     <div id="assemble-scenes"></div>
 
@@ -1001,7 +1018,7 @@ function showTab(tab) {
   if (tab === 'generate') { renderCategoryFilters(); renderTrends(); renderScripts(); if (!state.trends.length) loadTrends(); }
   if (tab === 'queue') { renderManualQueue(); initCountdowns(); }
   if (tab === 'videos') { loadVideos(); }
-  if (tab === 'assemble') { loadAssembleScripts(); }
+  if (tab === 'assemble') { loadAssembleScripts(); loadDriveInbox(); loadDriveStatus(); }
   if (tab === 'analytics') { loadAnalytics(); }
 }
 
@@ -1072,6 +1089,118 @@ async function triggerDailyGen(){
     await fetch(vpsUrl + '/daily/run', {method:'POST'});
     setTimeout(()=>{ previewDailyPick(); }, 30000);
   } catch(e){ showToast('Error: '+e.message); }
+}
+
+// ── DRIVE INBOX (public-folder auto-import) ──
+const _drive = { inbox: [] };
+
+async function loadDriveStatus() {
+  const vpsUrl = state.settings.vpsUrl;
+  const box = document.getElementById('drive-status');
+  const input = document.getElementById('drive-folder-input');
+  if (!vpsUrl || !box) return;
+  try {
+    const r = await fetch(vpsUrl + '/drive/status');
+    const d = await r.json();
+    if (d.folder_id && input && !input.value) input.value = `https://drive.google.com/drive/folders/${d.folder_id}`;
+    const bits = [];
+    if (d.configured) bits.push(`Configured · folder …${(d.folder_id||'').slice(-8)}`);
+    else bits.push('Not configured');
+    bits.push(`${d.imported_count} clip(s) imported`);
+    if (d.last_sync) bits.push(`last sync ${new Date(d.last_sync).toLocaleTimeString()}`);
+    if (d.last_error) bits.push(`<span style="color:var(--danger);">error: ${esc(d.last_error.slice(0,80))}</span>`);
+    box.innerHTML = bits.join(' · ');
+  } catch(e) { box.textContent = 'Status check failed: ' + e.message; }
+}
+
+async function saveDriveFolder() {
+  const vpsUrl = state.settings.vpsUrl;
+  const input = document.getElementById('drive-folder-input');
+  const url = input.value.trim();
+  if (!url) { showToast('Enter a folder URL'); return; }
+  showToast('Saving + syncing…');
+  try {
+    const r = await fetch(vpsUrl + '/drive/set-folder', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({folder: url})
+    });
+    const d = await r.json();
+    if (d.status === 'ok') {
+      showToast('Saved. Syncing now — refresh in a moment.');
+      setTimeout(() => { loadDriveStatus(); loadDriveInbox(); }, 3000);
+    } else {
+      showToast('Error: ' + (d.message||'unknown'));
+    }
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+async function syncDriveNow() {
+  const vpsUrl = state.settings.vpsUrl;
+  showToast('Syncing Drive…');
+  try {
+    const r = await fetch(vpsUrl + '/drive/sync', {method: 'POST'});
+    const d = await r.json();
+    showToast(`Synced: +${d.synced||0} new, ${d.skipped||0} already had`);
+    loadDriveStatus(); loadDriveInbox();
+  } catch(e) { showToast('Error: ' + e.message); }
+}
+
+async function loadDriveInbox() {
+  const vpsUrl = state.settings.vpsUrl;
+  const box = document.getElementById('assemble-inbox');
+  if (!vpsUrl || !box) return;
+  try {
+    const r = await fetch(vpsUrl + '/drive/inbox');
+    const d = await r.json();
+    _drive.inbox = d.clips || [];
+    renderDriveInbox();
+  } catch(e) {
+    box.innerHTML = '';
+  }
+}
+
+function renderDriveInbox() {
+  const box = document.getElementById('assemble-inbox');
+  if (!box) return;
+  if (!_drive.inbox.length) { box.innerHTML = ''; return; }
+  const vpsUrl = state.settings.vpsUrl;
+  box.innerHTML = `
+    <div class="settings-section" style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:600;color:var(--gold);">Clips Inbox (${_drive.inbox.length})</div>
+        <div style="font-size:11px;color:var(--white-dim);">From your Drive folder · click Assign below each clip</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
+        ${_drive.inbox.map(c => `
+          <div style="background:#0a0a0a;border:1px solid var(--border);border-radius:6px;overflow:hidden;">
+            <video src="${esc(vpsUrl + c.url)}" controls muted preload="metadata" style="width:100%;aspect-ratio:9/16;background:#000;display:block;"></video>
+            <div style="padding:6px 8px;">
+              <div style="font-size:10px;color:var(--white-dim);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.original_name||'')}">${esc(c.original_name || c.filename)}</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;" id="inbox-assign-${esc(c.drive_id)}">
+                ${(_assemble.scenes.length ? _assemble.scenes : [0,0,0,0]).map((_, i) => `
+                  <button class="action-btn" style="font-size:10px;padding:3px 7px;" onclick="assignInboxToScene('${esc(c.filename)}', '${esc(vpsUrl + c.url)}', ${i})">→S${i+1}</button>
+                `).join('')}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function assignInboxToScene(filename, videoUrl, sceneIdx) {
+  if (!_assemble.scenes.length) { showToast('Pick a script first'); return; }
+  _assemble.uploaded[sceneIdx] = filename;
+  const preview = document.getElementById('assemble-preview-' + sceneIdx);
+  const slot = document.getElementById('assemble-slot-' + sceneIdx);
+  if (preview) {
+    preview.innerHTML = `
+      <video src="${esc(videoUrl)}" controls muted style="width:100%;border-radius:4px;background:#000;aspect-ratio:9/16;max-height:320px;"></video>
+      <div style="font-size:10px;color:var(--white-dim);margin-top:4px;text-align:center;">assigned from inbox ✓</div>`;
+  }
+  if (slot) slot.style.borderColor = 'var(--gold)';
+  showToast(`Assigned to Scene ${sceneIdx+1}`);
+  refreshAssembleBtn();
 }
 
 // ── ASSEMBLE (manual Veo clips → finished video) ──
@@ -1166,6 +1295,8 @@ async function onAssembleScriptChange() {
     drop.addEventListener('drop', ev => uploadAssembleClip(i, ev.dataTransfer.files[0]));
     file.onchange = () => uploadAssembleClip(i, file.files[0]);
   });
+  // Re-render inbox so the →S1..→Sn buttons match the current script's scene count
+  renderDriveInbox();
 }
 
 async function uploadAssembleClip(i, file) {
