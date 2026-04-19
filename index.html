@@ -1200,6 +1200,7 @@ function assignInboxToScene(filename, videoUrl, sceneIdx) {
   }
   if (slot) slot.style.borderColor = 'var(--gold)';
   showToast(`Assigned to Scene ${sceneIdx+1}`);
+  _saveAssignments();
   refreshAssembleBtn();
 }
 
@@ -1219,6 +1220,25 @@ async function loadAssembleScripts() {
         const title = (s.script && s.script.title) || s.topic || 'untitled';
         return `<option value="${s.id}">#${s.id} — ${esc(title.slice(0,80))}</option>`;
       }).join('');
+    // Pick script: newest always wins if it was created today after 6am MDT
+    // (the daily cron), else fall back to the user's last selection.
+    const savedId = localStorage.getItem('awys_selected_script_id');
+    const newest = _assemble.scripts[0];  // /scripts returns newest first
+    const todaysDailyCutoff = new Date();
+    todaysDailyCutoff.setHours(6, 0, 0, 0);  // naive local 6am — good enough
+    const newestIsDaily = newest && new Date(newest.created_at) >= todaysDailyCutoff;
+    let pickId = '';
+    if (newestIsDaily && String(newest.id) !== savedId) {
+      pickId = String(newest.id);  // auto-switch to today's daily pick
+    } else if (savedId && _assemble.scripts.some(s => String(s.id) === savedId)) {
+      pickId = savedId;
+    } else if (newest) {
+      pickId = String(newest.id);
+    }
+    if (pickId) {
+      sel.value = pickId;
+      await onAssembleScriptChange();
+    }
   } catch(e) {
     showToast('Failed to load scripts: ' + e.message);
   }
@@ -1234,7 +1254,8 @@ async function onAssembleScriptChange() {
   resultDiv.innerHTML = '';
   scenesDiv.innerHTML = '';
   refreshAssembleBtn();
-  if (!sel.value) return;
+  if (!sel.value) { localStorage.removeItem('awys_selected_script_id'); return; }
+  localStorage.setItem('awys_selected_script_id', sel.value);
 
   const vpsUrl = state.settings.vpsUrl;
   const res = await fetch(vpsUrl + '/scripts/' + sel.value);
@@ -1297,6 +1318,27 @@ async function onAssembleScriptChange() {
   });
   // Re-render inbox so the →S1..→Sn buttons match the current script's scene count
   renderDriveInbox();
+  // Restore any previously-assigned clips for this script
+  const savedKey = 'awys_assigned_' + _assemble.scriptId;
+  const saved = JSON.parse(localStorage.getItem(savedKey) || '{}');
+  const vpsUrl = state.settings.vpsUrl;
+  for (const [idx, filename] of Object.entries(saved)) {
+    const i = parseInt(idx, 10);
+    const slot = document.getElementById('assemble-slot-' + i);
+    const preview = document.getElementById('assemble-preview-' + i);
+    if (!slot || !preview) continue;
+    _assemble.uploaded[i] = filename;
+    preview.innerHTML = `
+      <video src="${esc(vpsUrl + '/uploads/clips/' + filename)}" controls muted style="width:100%;border-radius:4px;background:#000;aspect-ratio:9/16;max-height:320px;"></video>
+      <div style="font-size:10px;color:var(--white-dim);margin-top:4px;text-align:center;">restored ✓</div>`;
+    slot.style.borderColor = 'var(--gold)';
+  }
+  refreshAssembleBtn();
+}
+
+function _saveAssignments() {
+  if (!_assemble.scriptId) return;
+  localStorage.setItem('awys_assigned_' + _assemble.scriptId, JSON.stringify(_assemble.uploaded));
 }
 
 async function uploadAssembleClip(i, file) {
@@ -1316,6 +1358,7 @@ async function uploadAssembleClip(i, file) {
       preview.innerHTML = `
         <video src="${esc(vpsUrl + j.url)}" controls muted style="width:100%;border-radius:4px;background:#000;aspect-ratio:9/16;max-height:320px;"></video>
         <div style="font-size:10px;color:var(--white-dim);margin-top:4px;text-align:center;">uploaded ✓</div>`;
+      _saveAssignments();
     } else {
       preview.innerHTML = `<div style="font-size:11px;color:var(--danger);">${esc(j.error||'upload failed')}</div>`;
     }
