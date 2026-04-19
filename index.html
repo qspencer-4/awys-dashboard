@@ -776,6 +776,7 @@ nav {
 <!-- NAV -->
 <nav>
   <button class="nav-tab active" onclick="showTab('generate')">Generate</button>
+  <button class="nav-tab" onclick="showTab('assemble')">Assemble</button>
   <button class="nav-tab" onclick="showTab('queue')">Queue</button>
   <button class="nav-tab" onclick="showTab('videos')">Videos</button>
   <button class="nav-tab" onclick="showTab('analytics')">Analytics</button>
@@ -833,6 +834,39 @@ nav {
       </div>
 
     </div>
+  </div>
+</div>
+
+<!-- ASSEMBLE TAB -->
+<div class="panel" id="panel-assemble">
+  <div style="padding:0 32px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div>
+        <div style="font-size:18px;font-weight:600;color:var(--gold);">Assemble Video from Veo Clips</div>
+        <div style="font-size:12px;color:var(--white-dim);margin-top:4px;">
+          Generate 4 clips in Google AI Studio, drop them here — we add voiceover, captions, and stitch.
+        </div>
+      </div>
+      <button class="refresh-btn" onclick="loadAssembleScripts()">↻ Refresh scripts</button>
+    </div>
+
+    <div class="settings-row" style="margin-bottom:16px;">
+      <div style="flex:1;">
+        <div class="settings-label">Script</div>
+        <div class="settings-sub">Pick an existing generated script</div>
+      </div>
+      <select class="settings-input" id="assemble-script-select" style="min-width:320px;" onchange="onAssembleScriptChange()">
+        <option value="">— choose a script —</option>
+      </select>
+    </div>
+
+    <div id="assemble-scenes"></div>
+
+    <div style="text-align:center;margin-top:24px;">
+      <button class="gen-btn" id="assemble-btn" disabled onclick="runAssemble()">Assemble Video</button>
+    </div>
+
+    <div id="assemble-result" style="margin-top:20px;"></div>
   </div>
 </div>
 
@@ -995,6 +1029,7 @@ function showTab(tab) {
   if (tab === 'generate') { renderCategoryFilters(); renderTrends(); renderScripts(); if (!state.trends.length) loadTrends(); }
   if (tab === 'queue') { renderManualQueue(); initCountdowns(); }
   if (tab === 'videos') { loadVideos(); }
+  if (tab === 'assemble') { loadAssembleScripts(); }
   if (tab === 'analytics') { loadAnalytics(); }
 }
 
@@ -1033,6 +1068,149 @@ async function loadVideos() {
   } catch(e) {
     grid.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--danger);">Failed to load: ${esc(e.message)}</div>`;
   }
+}
+
+// ── ASSEMBLE (manual Veo clips → finished video) ──
+const _assemble = { scripts: [], scenes: [], uploaded: {}, scriptId: null };
+
+async function loadAssembleScripts() {
+  const vpsUrl = state.settings.vpsUrl;
+  const sel = document.getElementById('assemble-script-select');
+  if (!vpsUrl || !sel) return;
+  try {
+    const res = await fetch(vpsUrl + '/scripts', {signal: AbortSignal.timeout(10000)});
+    const data = await res.json();
+    _assemble.scripts = data.scripts || [];
+    sel.innerHTML = '<option value="">— choose a script —</option>' +
+      _assemble.scripts.map(s => {
+        const title = (s.script && s.script.title) || s.topic || 'untitled';
+        return `<option value="${s.id}">#${s.id} — ${esc(title.slice(0,80))}</option>`;
+      }).join('');
+  } catch(e) {
+    showToast('Failed to load scripts: ' + e.message);
+  }
+}
+
+async function onAssembleScriptChange() {
+  const sel = document.getElementById('assemble-script-select');
+  const scenesDiv = document.getElementById('assemble-scenes');
+  const resultDiv = document.getElementById('assemble-result');
+  _assemble.uploaded = {};
+  _assemble.scenes = [];
+  _assemble.scriptId = null;
+  resultDiv.innerHTML = '';
+  scenesDiv.innerHTML = '';
+  refreshAssembleBtn();
+  if (!sel.value) return;
+
+  const vpsUrl = state.settings.vpsUrl;
+  const res = await fetch(vpsUrl + '/scripts/' + sel.value);
+  const data = await res.json();
+  const script = data.script && data.script.script;
+  if (!script) { showToast('Script payload missing'); return; }
+  _assemble.scenes = script.scenes || [];
+  _assemble.scriptId = parseInt(sel.value, 10);
+
+  scenesDiv.innerHTML = _assemble.scenes.map((s, i) => `
+    <div class="settings-section" id="assemble-slot-${i}" style="margin-bottom:12px;">
+      <div style="display:flex;gap:16px;align-items:flex-start;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;color:var(--gold);margin-bottom:4px;">
+            Scene ${i+1} · <span style="font-family:var(--mono);letter-spacing:1px;">${esc(s.text_overlay||'')}</span>
+          </div>
+          <div style="font-size:12px;color:var(--white-dim);font-style:italic;margin-bottom:8px;">"${esc(s.narration||'')}"</div>
+          <div style="font-size:10px;color:var(--white-dim);letter-spacing:1px;margin-bottom:4px;">VEO PROMPT — paste this into Google AI Studio</div>
+          <textarea readonly style="width:100%;height:70px;font-family:var(--mono);font-size:11px;background:#0a0a0a;color:#ccc;border:1px solid var(--border);border-radius:6px;padding:8px;resize:vertical;" onclick="this.select()">${esc(s.visual||'')}</textarea>
+          <button class="action-btn" style="font-size:11px;padding:6px 12px;margin-top:6px;" onclick="navigator.clipboard.writeText(${JSON.stringify(s.visual||'')}).then(() => showToast('Prompt copied'))">Copy Prompt</button>
+        </div>
+        <div style="flex:0 0 220px;">
+          <label class="assemble-drop" id="assemble-drop-${i}" style="display:block;border:2px dashed var(--border);border-radius:8px;padding:20px 10px;text-align:center;cursor:pointer;font-size:11px;color:var(--white-dim);">
+            <input type="file" accept="video/*" hidden id="assemble-file-${i}">
+            Drop Veo clip<br>or click
+          </label>
+          <div id="assemble-preview-${i}" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  _assemble.scenes.forEach((_, i) => {
+    const drop = document.getElementById('assemble-drop-' + i);
+    const file = document.getElementById('assemble-file-' + i);
+    drop.onclick = () => file.click();
+    ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.style.borderColor='var(--gold)';}));
+    ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => {e.preventDefault(); drop.style.borderColor='var(--border)';}));
+    drop.addEventListener('drop', ev => uploadAssembleClip(i, ev.dataTransfer.files[0]));
+    file.onchange = () => uploadAssembleClip(i, file.files[0]);
+  });
+}
+
+async function uploadAssembleClip(i, file) {
+  if (!file) return;
+  const vpsUrl = state.settings.vpsUrl;
+  const preview = document.getElementById('assemble-preview-' + i);
+  const slot = document.getElementById('assemble-slot-' + i);
+  preview.innerHTML = '<div style="font-size:11px;color:var(--white-dim);">Uploading…</div>';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(vpsUrl + '/upload-clip', {method:'POST', body: fd});
+    const j = await res.json();
+    if (j.filename) {
+      _assemble.uploaded[i] = j.filename;
+      slot.style.borderColor = 'var(--gold)';
+      preview.innerHTML = `
+        <video src="${esc(vpsUrl + j.url)}" controls muted style="width:100%;border-radius:4px;background:#000;aspect-ratio:9/16;max-height:320px;"></video>
+        <div style="font-size:10px;color:var(--white-dim);margin-top:4px;text-align:center;">uploaded ✓</div>`;
+    } else {
+      preview.innerHTML = `<div style="font-size:11px;color:var(--danger);">${esc(j.error||'upload failed')}</div>`;
+    }
+  } catch(e) {
+    preview.innerHTML = `<div style="font-size:11px;color:var(--danger);">${esc(e.message)}</div>`;
+  }
+  refreshAssembleBtn();
+}
+
+function refreshAssembleBtn() {
+  const btn = document.getElementById('assemble-btn');
+  if (!btn) return;
+  btn.disabled = !(_assemble.scenes.length && _assemble.scenes.every((_, i) => _assemble.uploaded[i]));
+}
+
+async function runAssemble() {
+  const btn = document.getElementById('assemble-btn');
+  const resultDiv = document.getElementById('assemble-result');
+  const vpsUrl = state.settings.vpsUrl;
+  btn.disabled = true;
+  btn.textContent = 'Assembling…';
+  resultDiv.innerHTML = '<div style="padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-align:center;font-size:13px;color:var(--white-dim);">Rendering — this takes about a minute<span class="loading-dots"></span></div>';
+  const clip_filenames = _assemble.scenes.map((_, i) => _assemble.uploaded[i]);
+  try {
+    const res = await fetch(vpsUrl + '/assemble-video', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({script_id: _assemble.scriptId, clip_filenames})
+    });
+    const j = await res.json();
+    if (j.status === 'ok') {
+      const url = vpsUrl + j.download_url;
+      resultDiv.innerHTML = `
+        <div style="padding:20px;background:var(--surface);border:1px solid var(--gold);border-radius:8px;text-align:center;">
+          <div style="color:var(--gold);font-weight:600;margin-bottom:12px;">Video assembled — saved to Videos tab</div>
+          <video src="${esc(url)}" controls style="max-width:360px;border-radius:6px;background:#000;aspect-ratio:9/16;max-height:480px;"></video>
+          <div style="margin-top:12px;">
+            <a href="${esc(url)}" target="_blank" class="gen-btn" style="padding:8px 16px;font-size:12px;text-decoration:none;display:inline-block;">Download MP4</a>
+          </div>
+        </div>`;
+      showToast('Video assembled');
+    } else {
+      resultDiv.innerHTML = `<div style="padding:20px;background:var(--surface);border:1px solid var(--danger);border-radius:8px;color:var(--danger);">Error: ${esc(j.message||'unknown')}</div>`;
+    }
+  } catch(e) {
+    resultDiv.innerHTML = `<div style="padding:20px;background:var(--surface);border:1px solid var(--danger);border-radius:8px;color:var(--danger);">Error: ${esc(e.message)}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Assemble Video';
+  refreshAssembleBtn();
 }
 
 // ── TOAST ──
