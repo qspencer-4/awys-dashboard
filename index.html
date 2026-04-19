@@ -769,7 +769,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.28</div>
+    <div class="version" id="version-label">v0.29</div>
   </div>
 </header>
 
@@ -1641,15 +1641,32 @@ async function runAssemble() {
   const vpsUrl = state.settings.vpsUrl;
   btn.disabled = true;
   btn.textContent = 'Assembling…';
-  resultDiv.innerHTML = '<div style="padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-align:center;font-size:13px;color:var(--white-dim);">Rendering — this takes about a minute<span class="loading-dots"></span></div>';
+  const progressBox = (sec) => `<div style="padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-align:center;font-size:13px;color:var(--white-dim);">Rendering — ~2 min with karaoke captions<span class="loading-dots"></span><div style="margin-top:6px;font-family:var(--mono);font-size:11px;">${sec}s elapsed</div></div>`;
+  resultDiv.innerHTML = progressBox(0);
   const clip_filenames = _assemble.scenes.map((_, i) => _assemble.uploaded[i]);
   try {
-    const res = await fetch(vpsUrl + '/assemble-video', {
+    const startRes = await fetch(vpsUrl + '/assemble-video', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({script_id: _assemble.scriptId, clip_filenames})
     });
-    const j = await res.json();
+    const startJ = await startRes.json();
+    if (startJ.status !== 'started') {
+      throw new Error(startJ.message || 'failed to start assembly');
+    }
+    // Poll until done or error
+    const jobId = startJ.job_id;
+    let j = null;
+    const deadlineMs = Date.now() + 10 * 60 * 1000;  // 10-minute safety cap
+    while (Date.now() < deadlineMs) {
+      await new Promise(r => setTimeout(r, 3000));
+      const sRes = await fetch(vpsUrl + '/assemble-video/status/' + jobId);
+      const s = await sRes.json();
+      if (s.status === 'done') { j = {status:'ok', ...s}; break; }
+      if (s.status === 'error') { j = s; break; }
+      resultDiv.innerHTML = progressBox(s.elapsed_seconds || 0);
+    }
+    if (!j) throw new Error('timed out waiting for render');
     if (j.status === 'ok') {
       const url = vpsUrl + j.download_url;
       // Find the caption payload from the currently loaded script
