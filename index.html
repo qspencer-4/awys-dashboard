@@ -660,7 +660,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.36</div>
+    <div class="version" id="version-label">v0.37</div>
   </div>
 </header>
 
@@ -1647,6 +1647,33 @@ async function onAssembleScriptChange(scriptId) {
   if (!script) { showToast('Script payload missing'); return; }
   _assemble.scenes = script.scenes || [];
   _assemble.scriptId = parseInt(scriptId, 10);
+  _assemble.topic = (data.script && data.script.topic) || '';
+  _assemble.angle = (data.script && data.script.angle) || {};
+
+  // Length proposal + regenerate controls
+  const sceneCount = _assemble.scenes.length || 4;
+  const totalSec = sceneCount * 8;
+  const angle = _assemble.angle || {};
+  const reason = angle.length_reason || '';
+  const overridden = angle.scene_count_overridden === true;
+  const lengthOptions = [3,4,5,6,7,8,10,12,15];
+  const opts = lengthOptions.map(n => `<option value="${n}" ${n===sceneCount?'selected':''}>${n*8}s · ${n} scenes</option>`).join('');
+  const lengthHtml = `
+    <div class="settings-section" style="margin-bottom:12px;padding:10px 14px;border-left:3px solid var(--gold);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:220px;">
+          <div style="font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:4px;">
+            ${overridden ? 'USER-CHOSEN LENGTH' : 'AI-SUGGESTED LENGTH'}
+          </div>
+          <div style="font-size:14px;color:var(--white);font-weight:600;">${totalSec}s · ${sceneCount} scenes</div>
+          ${reason ? `<div style="font-size:11px;color:var(--white-dim);margin-top:4px;">${esc(reason)}</div>` : ''}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <select id="length-override-select" class="settings-input" style="font-size:11px;padding:6px;">${opts}</select>
+          <button class="action-btn" style="font-size:11px;padding:6px 10px;" onclick="regenerateAtLength()">Regenerate</button>
+        </div>
+      </div>
+    </div>`;
 
   // Show cast summary if screenplay-format (characters + lines)
   const characters = (data.script && data.script.script && data.script.script.characters) || [];
@@ -1659,7 +1686,7 @@ async function onAssembleScriptChange(scriptId) {
         </div>`).join('')}
     </div>` : '';
 
-  scenesDiv.innerHTML = castHtml + _assemble.scenes.map((s, i) => {
+  scenesDiv.innerHTML = lengthHtml + castHtml + _assemble.scenes.map((s, i) => {
     const lines = s.lines || [];
     const dialogueHtml = lines.length
       ? lines.map(l => `<div style="font-size:12px;color:var(--white-dim);margin-bottom:4px;"><b style="color:var(--white);">${esc(l.character||'')}:</b> <i>"${esc(l.text||'')}"</i></div>`).join('')
@@ -1754,6 +1781,28 @@ function refreshAssembleBtn() {
   const btn = document.getElementById('assemble-btn');
   if (!btn) return;
   btn.disabled = !(_assemble.scenes.length && _assemble.scenes.every((_, i) => _assemble.uploaded[i]));
+}
+
+async function regenerateAtLength() {
+  const sel = document.getElementById('length-override-select');
+  const sc = parseInt(sel.value, 10);
+  if (!sc || sc < 3 || sc > 15) { showToast('Pick a valid length'); return; }
+  const topic = _assemble.topic;
+  if (!topic) { showToast('No topic to regenerate against'); return; }
+  if (!confirm(`Regenerate "${topic}" at ${sc*8}s (${sc} scenes)? This creates a new script (~30s, ~$0.05).`)) return;
+  const vpsUrl = state.settings.vpsUrl;
+  showToast(`Regenerating at ${sc*8}s…`);
+  try {
+    const r = await fetch(vpsUrl + '/generate-script', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({topic, scene_count: sc})
+    });
+    const j = await r.json();
+    if (j.status !== 'ok') { showToast('Error: ' + (j.message||'failed')); return; }
+    showToast('New script #' + j.id + ' ready');
+    // Reload assemble — newest script auto-selects
+    await loadAssembleScripts();
+  } catch(e) { showToast('Error: ' + e.message); }
 }
 
 async function runAssemble() {
