@@ -660,7 +660,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.37</div>
+    <div class="version" id="version-label">v0.38</div>
   </div>
 </header>
 
@@ -1326,6 +1326,23 @@ function selectDay(ymd) {
     const sizeMB = (v.size_bytes/1048576).toFixed(1)+' MB';
     const titleLine = v.title ? `<div style="font-size:13px;color:var(--gold);font-weight:600;margin-bottom:6px;">${esc(v.title)}</div>` : '';
     const expLine = v.experiment ? `<div style="font-size:11px;color:var(--white-dim);margin-bottom:6px;padding:6px 8px;background:var(--surface);border-left:2px solid var(--gold);border-radius:3px;"><span style="color:var(--gold);letter-spacing:1px;">EXPERIMENT</span> · ${esc(v.experiment)}</div>` : '';
+    const groundingLine = (() => {
+      const g = v.grounding;
+      if (!g) return '';
+      if (!g.source) return '';
+      const correction = g.corrects_myth
+        ? `<div style="font-size:11px;color:var(--white);margin-top:4px;"><b style="color:var(--gold);">CORRECTS MYTH</b> ${esc(g.corrects_myth)}</div>`
+        : '';
+      const thin = g.needs_more_sources
+        ? `<span style="background:var(--danger);color:#fff;padding:1px 6px;border-radius:3px;font-size:9px;letter-spacing:1px;margin-left:4px;">THIN SOURCE</span>`
+        : '';
+      const link = g.url ? `<a href="${esc(g.url)}" target="_blank" style="color:var(--gold);text-decoration:none;">${esc(g.title||'Wikipedia')}</a>` : esc(g.title||'Wikipedia');
+      return `<div style="font-size:11px;margin-bottom:6px;padding:6px 8px;background:var(--surface);border-left:2px solid var(--gold);border-radius:3px;">
+        <span style="color:var(--gold);letter-spacing:1px;font-size:10px;">GROUNDED · ${link}</span>${thin}
+        ${correction}
+      </div>`;
+    })();
+
     const critiqueLine = (() => {
       const c = v.critique;
       if (!c || !c.scores) return '';
@@ -1351,6 +1368,7 @@ function selectDay(ymd) {
     videoBlock = `<video src="${esc(url)}" controls preload="metadata"></video>
       ${titleLine}
       ${expLine}
+      ${groundingLine}
       ${critiqueLine}
       <div style="font-size:11px;color:var(--white-dim);margin-bottom:8px;">${dur} · ${sizeMB}${videos.length>1?` · +${videos.length-1} more`:''}</div>
       <a href="${esc(url)}" target="_blank" class="action-btn" style="display:inline-block;padding:6px 10px;font-size:11px;text-decoration:none;margin-right:6px;">Download</a>
