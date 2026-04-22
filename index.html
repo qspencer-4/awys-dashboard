@@ -660,7 +660,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.38</div>
+    <div class="version" id="version-label">v0.39</div>
   </div>
 </header>
 
@@ -1589,6 +1589,7 @@ function renderDriveInbox() {
             <div style="padding:6px 8px;">
               <div style="font-size:10px;color:var(--white-dim);margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${esc(c.original_name||'')}">${esc(c.original_name || c.filename)}</div>
               <div style="display:flex;gap:4px;flex-wrap:wrap;" id="inbox-assign-${esc(c.drive_id)}">
+                <button class="action-btn" style="font-size:10px;padding:3px 7px;border-color:var(--gold);color:var(--gold);" onclick="setSingleClipFromInbox('${esc(c.filename)}')">→One-shot</button>
                 ${(_assemble.scenes.length ? _assemble.scenes : [0,0,0,0]).map((_, i) => `
                   <button class="action-btn" style="font-size:10px;padding:3px 7px;" onclick="assignInboxToScene('${esc(c.filename)}', '${esc(vpsUrl + c.url)}', ${i})">→S${i+1}</button>
                 `).join('')}
@@ -1616,7 +1617,7 @@ function assignInboxToScene(filename, videoUrl, sceneIdx) {
 }
 
 // ── ASSEMBLE (manual Veo clips → finished video) ──
-const _assemble = { scripts: [], scenes: [], uploaded: {}, scriptId: null };
+const _assemble = { scripts: [], scenes: [], uploaded: {}, scriptId: null, singleClip: null };
 
 async function loadAssembleScripts() {
   const vpsUrl = state.settings.vpsUrl;
@@ -1653,6 +1654,7 @@ async function onAssembleScriptChange(scriptId) {
   _assemble.uploaded = {};
   _assemble.scenes = [];
   _assemble.scriptId = null;
+  _assemble.singleClip = null;
   resultDiv.innerHTML = '';
   scenesDiv.innerHTML = '';
   refreshAssembleBtn();
@@ -1704,7 +1706,27 @@ async function onAssembleScriptChange(scriptId) {
         </div>`).join('')}
     </div>` : '';
 
-  scenesDiv.innerHTML = lengthHtml + castHtml + _assemble.scenes.map((s, i) => {
+  // Single-clip mode (one continuous Veo clip, no per-scene seams)
+  const singleClipHtml = `
+    <div class="settings-section" id="single-clip-section" style="margin-bottom:16px;border:2px solid var(--gold);background:linear-gradient(180deg, rgba(212,175,55,0.06), transparent);">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+        <div>
+          <div style="font-size:11px;letter-spacing:3px;color:var(--gold);">ONE-SHOT MODE · RECOMMENDED</div>
+          <div style="font-size:11px;color:var(--white-dim);margin-top:4px;">Drop ONE continuous ~${totalSec}s clip — no scene seams, single lip-sync pass.</div>
+        </div>
+        <button class="action-btn" style="font-size:10px;padding:5px 10px;" onclick="clearSingleClip()" id="single-clip-clear-btn" style="display:none;">Clear</button>
+      </div>
+      <label class="assemble-drop" id="single-clip-drop" style="display:block;border:2px dashed var(--gold);border-radius:8px;padding:24px 12px;text-align:center;cursor:pointer;font-size:12px;color:var(--white);background:#0a0a0a;">
+        <input type="file" accept="video/*" hidden id="single-clip-file">
+        <div id="single-clip-drop-label">Drop your one-shot clip here<br><span style="font-size:10px;color:var(--white-dim);">or click to choose · target ${totalSec}s</span></div>
+      </label>
+      <div id="single-clip-preview" style="margin-top:10px;"></div>
+    </div>
+    <div style="text-align:center;margin:12px 0;font-size:10px;color:var(--white-dim);letter-spacing:3px;">— OR —</div>
+    <div style="font-size:10px;color:var(--white-dim);letter-spacing:2px;margin-bottom:10px;">PER-SCENE MODE · upload ${sceneCount} × 8s clips below</div>
+  `;
+
+  scenesDiv.innerHTML = singleClipHtml + lengthHtml + castHtml + _assemble.scenes.map((s, i) => {
     const lines = s.lines || [];
     const dialogueHtml = lines.length
       ? lines.map(l => `<div style="font-size:12px;color:var(--white-dim);margin-bottom:4px;"><b style="color:var(--white);">${esc(l.character||'')}:</b> <i>"${esc(l.text||'')}"</i></div>`).join('')
@@ -1744,12 +1766,24 @@ async function onAssembleScriptChange(scriptId) {
     drop.addEventListener('drop', ev => uploadAssembleClip(i, ev.dataTransfer.files[0]));
     file.onchange = () => uploadAssembleClip(i, file.files[0]);
   });
+
+  // Single-clip drop handlers
+  const sDrop = document.getElementById('single-clip-drop');
+  const sFile = document.getElementById('single-clip-file');
+  if (sDrop && sFile) {
+    sDrop.onclick = () => sFile.click();
+    ['dragenter','dragover'].forEach(ev => sDrop.addEventListener(ev, e => {e.preventDefault(); sDrop.style.background='#1a1500';}));
+    ['dragleave','drop'].forEach(ev => sDrop.addEventListener(ev, e => {e.preventDefault(); sDrop.style.background='#0a0a0a';}));
+    sDrop.addEventListener('drop', ev => uploadSingleClip(ev.dataTransfer.files[0]));
+    sFile.onchange = () => uploadSingleClip(sFile.files[0]);
+  }
   // Re-render inbox so the →S1..→Sn buttons match the current script's scene count
   renderDriveInbox();
   // Restore any previously-assigned clips for this script
   const savedKey = 'awys_assigned_' + _assemble.scriptId;
   const saved = JSON.parse(localStorage.getItem(savedKey) || '{}');
   for (const [idx, filename] of Object.entries(saved)) {
+    if (idx === 'singleClip') continue;
     const i = parseInt(idx, 10);
     const slot = document.getElementById('assemble-slot-' + i);
     const preview = document.getElementById('assemble-preview-' + i);
@@ -1760,12 +1794,70 @@ async function onAssembleScriptChange(scriptId) {
       <div style="font-size:10px;color:var(--white-dim);margin-top:4px;text-align:center;">restored ✓</div>`;
     slot.style.borderColor = 'var(--gold)';
   }
+  // Restore single-clip selection if any
+  if (saved.singleClip) {
+    _assemble.singleClip = saved.singleClip;
+    _renderSingleClipPreview();
+  }
   refreshAssembleBtn();
+}
+
+function _renderSingleClipPreview() {
+  const vpsUrl = state.settings.vpsUrl;
+  const preview = document.getElementById('single-clip-preview');
+  const clearBtn = document.getElementById('single-clip-clear-btn');
+  if (!preview) return;
+  if (_assemble.singleClip) {
+    preview.innerHTML = `
+      <video src="${esc(vpsUrl + '/uploads/clips/' + _assemble.singleClip)}" controls muted style="width:100%;max-width:240px;border-radius:6px;background:#000;aspect-ratio:9/16;max-height:360px;display:block;margin:0 auto;"></video>
+      <div style="font-size:10px;color:var(--gold);margin-top:6px;text-align:center;">one-shot clip set ✓ · per-scene slots ignored</div>`;
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+  } else {
+    preview.innerHTML = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+  }
+}
+
+async function uploadSingleClip(file) {
+  if (!file) return;
+  const vpsUrl = state.settings.vpsUrl;
+  const preview = document.getElementById('single-clip-preview');
+  preview.innerHTML = '<div style="font-size:11px;color:var(--white-dim);text-align:center;">Uploading…</div>';
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(vpsUrl + '/upload-clip', {method: 'POST', body: fd});
+    const j = await res.json();
+    if (j.status !== 'ok') throw new Error(j.message || 'upload failed');
+    _assemble.singleClip = j.filename;
+    _renderSingleClipPreview();
+    _saveAssignments();
+    refreshAssembleBtn();
+  } catch(e) {
+    preview.innerHTML = `<div style="font-size:11px;color:var(--danger);text-align:center;">Upload failed: ${esc(e.message)}</div>`;
+  }
+}
+
+function clearSingleClip() {
+  _assemble.singleClip = null;
+  _renderSingleClipPreview();
+  _saveAssignments();
+  refreshAssembleBtn();
+}
+
+function setSingleClipFromInbox(filename) {
+  _assemble.singleClip = filename;
+  _renderSingleClipPreview();
+  _saveAssignments();
+  refreshAssembleBtn();
+  showToast('Set as one-shot clip');
 }
 
 function _saveAssignments() {
   if (!_assemble.scriptId) return;
-  localStorage.setItem('awys_assigned_' + _assemble.scriptId, JSON.stringify(_assemble.uploaded));
+  const payload = {..._assemble.uploaded};
+  if (_assemble.singleClip) payload.singleClip = _assemble.singleClip;
+  localStorage.setItem('awys_assigned_' + _assemble.scriptId, JSON.stringify(payload));
 }
 
 async function uploadAssembleClip(i, file) {
@@ -1798,7 +1890,12 @@ async function uploadAssembleClip(i, file) {
 function refreshAssembleBtn() {
   const btn = document.getElementById('assemble-btn');
   if (!btn) return;
-  btn.disabled = !(_assemble.scenes.length && _assemble.scenes.every((_, i) => _assemble.uploaded[i]));
+  if (!_assemble.scenes.length) { btn.disabled = true; return; }
+  // Single-clip mode wins if set; otherwise need all per-scene slots filled.
+  const singleReady = !!_assemble.singleClip;
+  const perSceneReady = _assemble.scenes.every((_, i) => _assemble.uploaded[i]);
+  btn.disabled = !(singleReady || perSceneReady);
+  btn.textContent = singleReady ? 'Assemble Video (one-shot)' : 'Assemble Video';
 }
 
 async function regenerateAtLength() {
@@ -1831,7 +1928,9 @@ async function runAssemble() {
   btn.textContent = 'Assembling…';
   const progressBox = (sec) => `<div style="padding:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;text-align:center;font-size:13px;color:var(--white-dim);">Rendering — ~2 min with karaoke captions<span class="loading-dots"></span><div style="margin-top:6px;font-family:var(--mono);font-size:11px;">${sec}s elapsed</div></div>`;
   resultDiv.innerHTML = progressBox(0);
-  const clip_filenames = _assemble.scenes.map((_, i) => _assemble.uploaded[i]);
+  const clip_filenames = _assemble.singleClip
+    ? [_assemble.singleClip]
+    : _assemble.scenes.map((_, i) => _assemble.uploaded[i]);
   try {
     const startRes = await fetch(vpsUrl + '/assemble-video', {
       method: 'POST',
