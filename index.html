@@ -660,7 +660,7 @@ nav {
   <div class="header-right">
     <div class="health-dot" id="health-dot" title="System healthy"></div>
     <button class="deploy-btn" id="deploy-btn" onclick="deployToGitHub()">DEPLOY</button>
-    <div class="version" id="version-label">v0.40</div>
+    <div class="version" id="version-label">v0.39</div>
   </div>
 </header>
 
@@ -726,17 +726,6 @@ nav {
         <button class="action-btn" style="padding:8px 14px;font-size:12px;" onclick="syncDriveNow()">Sync Now</button>
       </div>
       <div id="drive-status" style="margin-top:8px;font-size:11px;color:var(--white-dim);"></div>
-    </div>
-
-    <!-- Generate new script from topic (uses today's prompt: orient/development/landing phases) -->
-    <div class="settings-section" style="margin-bottom:16px;">
-      <div class="settings-label">Generate new script from topic</div>
-      <div class="settings-sub">Uses the current script_gen prompt. Scene count flexes to story (orient + development + landing). ~30-90s. Auto-selects when ready.</div>
-      <textarea class="settings-input" id="gen-topic-input" rows="2" style="width:100%;font-family:inherit;resize:vertical;" placeholder="Topic — e.g. 'Taoist farmer parable' or 'Tesla died broke feeding pigeons'"></textarea>
-      <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
-        <button class="gen-btn" style="padding:8px 14px;font-size:12px;" id="gen-script-btn" onclick="generateScriptFromTopic()">Generate new script</button>
-        <span id="gen-script-status" style="font-size:12px;color:var(--white-dim);"></span>
-      </div>
     </div>
 
     <div class="settings-section" id="assemble-script-header" style="margin-bottom:16px;">
@@ -1909,22 +1898,6 @@ function refreshAssembleBtn() {
   btn.textContent = singleReady ? 'Assemble Video (one-shot)' : 'Assemble Video';
 }
 
-async function _pollScriptJob(jobId, vpsUrl, onTick) {
-  return new Promise((resolve, reject) => {
-    let elapsed = 0;
-    const tick = setInterval(async () => {
-      elapsed += 3;
-      try {
-        const s = await (await fetch(vpsUrl + '/generate-script/status/' + jobId)).json();
-        if (s.status === 'done') { clearInterval(tick); resolve(s); }
-        else if (s.status === 'error') { clearInterval(tick); reject(new Error(s.error || s.message || 'failed')); }
-        else if (onTick) onTick(s.elapsed_seconds || elapsed);
-      } catch(e) { if (onTick) onTick(elapsed, 'poll error: '+e.message); }
-    }, 3000);
-    setTimeout(() => { clearInterval(tick); reject(new Error('timed out after 5min')); }, 300000);
-  });
-}
-
 async function regenerateAtLength() {
   const sel = document.getElementById('length-override-select');
   const sc = parseInt(sel.value, 10);
@@ -1940,46 +1913,11 @@ async function regenerateAtLength() {
       body: JSON.stringify({topic, scene_count: sc})
     });
     const j = await r.json();
-    if (j.status !== 'started') { showToast('Error: ' + (j.message||'failed')); return; }
-    const done = await _pollScriptJob(j.job_id, vpsUrl, (sec)=>showToast(`Regenerating… ${sec}s`));
-    showToast('New script #' + done.id + ' ready');
+    if (j.status !== 'ok') { showToast('Error: ' + (j.message||'failed')); return; }
+    showToast('New script #' + j.id + ' ready');
+    // Reload assemble — newest script auto-selects
     await loadAssembleScripts();
   } catch(e) { showToast('Error: ' + e.message); }
-}
-
-async function generateScriptFromTopic() {
-  const topicEl = document.getElementById('gen-topic-input');
-  const btn = document.getElementById('gen-script-btn');
-  const status = document.getElementById('gen-script-status');
-  const topic = (topicEl.value || '').trim();
-  if (!topic) { status.textContent = 'enter a topic first'; status.style.color = 'var(--danger)'; return; }
-  const vpsUrl = state.settings.vpsUrl;
-  if (!vpsUrl) { status.textContent = 'VPS URL not set'; status.style.color = 'var(--danger)'; return; }
-  btn.disabled = true;
-  status.style.color = 'var(--white-dim)';
-  status.textContent = 'starting…';
-  try {
-    const r = await fetch(vpsUrl + '/generate-script', {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({topic})
-    });
-    const j = await r.json();
-    if (j.status !== 'started') {
-      status.textContent = 'error: ' + (j.message || 'unknown');
-      status.style.color = 'var(--danger)';
-      btn.disabled = false; return;
-    }
-    const done = await _pollScriptJob(j.job_id, vpsUrl, (sec)=>{ status.textContent = `generating… ${sec}s`; });
-    status.textContent = `done — script #${done.id} ready (${done.elapsed_seconds}s)`;
-    status.style.color = 'var(--gold)';
-    topicEl.value = '';
-    await loadAssembleScripts();
-    btn.disabled = false;
-  } catch(e) {
-    status.textContent = 'failed: ' + e.message;
-    status.style.color = 'var(--danger)';
-    btn.disabled = false;
-  }
 }
 
 async function runAssemble() {
